@@ -1,0 +1,4 @@
+.actions { display: flex; gap: 0.5rem; align-items: center; }
+.btn-outline { border: 1px solid var(--primary); background: #fff; color: var(--primary); padding: 0.5rem 1rem; border-radius: 10px; cursor: pointer; }
+.table-wrap { padding: 1rem; overflow-x: auto; }
+@media print { .no-print { display: none; } }

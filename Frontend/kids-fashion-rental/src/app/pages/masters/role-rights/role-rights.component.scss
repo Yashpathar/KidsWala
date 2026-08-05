@@ -1,0 +1,65 @@
+.rights-card { padding: 1.25rem; }
+
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+
+  label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-bottom: 0.25rem; }
+  select {
+    min-width: 220px;
+    padding: 0.55rem 0.75rem;
+    border-radius: 10px;
+    border: 1px solid #ece8ff;
+  }
+}
+
+.table-wrap { overflow-x: auto; }
+
+.rights-matrix {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 640px;
+
+  th, td {
+    padding: 0.65rem 0.5rem;
+    border-bottom: 1px solid var(--border);
+  }
+
+  th {
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: var(--text-muted);
+    background: #faf8ff;
+  }
+
+  .center { text-align: center; width: 72px; }
+  .menu-name { font-weight: 600; font-size: 0.9rem; }
+
+  input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary);
+    cursor: pointer;
+  }
+}
+
+.role-modal {
+  width: min(400px, 92vw);
+  padding: 1.25rem;
+
+  h3 { margin: 0 0 1rem; }
+  label { display: block; font-size: 0.8rem; font-weight: 600; color: var(--text-muted); margin-top: 0.5rem; }
+  input {
+    width: 100%;
+    padding: 0.55rem;
+    border: 1px solid #ece8ff;
+    border-radius: 10px;
+    margin-top: 0.2rem;
+  }
+  .modal-actions { margin-top: 1rem; display: flex; gap: 0.5rem; justify-content: flex-end; }
+}

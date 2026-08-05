@@ -1,0 +1,240 @@
+<div class="dashboard-page">
+  <div class="page-header">
+    <h2>{{ dashboardTitle }}</h2>
+    <p class="breadcrumb">{{ dashboardSubtitle }} — <strong>{{ auth.currentUser()?.fullName }}</strong></p>
+  </div>
+
+  @if (auth.isPlatformAdmin() && counts['totalCompanies']) {
+    <div class="kpi-grid platform-kpi">
+      <div class="kpi-card ui-card">
+        <div class="kpi-icon purple"><i class="bi bi-building"></i></div>
+        <div class="kpi-body"><span>Companies</span><h3>{{ counts['totalCompanies'] }}</h3></div>
+      </div>
+      <div class="kpi-card ui-card">
+        <div class="kpi-icon blue"><i class="bi bi-shop"></i></div>
+        <div class="kpi-body"><span>Branches</span><h3>{{ counts['totalBranches'] }}</h3></div>
+      </div>
+      <div class="kpi-card ui-card">
+        <div class="kpi-icon green"><i class="bi bi-people"></i></div>
+        <div class="kpi-body"><span>Users</span><h3>{{ counts['totalUsers'] }}</h3></div>
+      </div>
+    </div>
+  }
+
+  @if (loading) {
+    <div class="ui-card loading-dash"><i class="bi bi-arrow-repeat spin"></i> Loading dashboard...</div>
+  } @else {
+    <div class="kpi-grid">
+      <div class="kpi-card ui-card">
+        <div class="kpi-icon purple"><i class="bi bi-calendar-check"></i></div>
+        <div class="kpi-body">
+          <span>Total Bookings</span>
+          <h3>{{ counts['totalBookings'] }}</h3>
+          <em class="sub">All time</em>
+        </div>
+        <i class="bi bi-chevron-right kpi-arrow"></i>
+      </div>
+      <div class="kpi-card ui-card">
+        <div class="kpi-icon blue"><i class="bi bi-truck"></i></div>
+        <div class="kpi-body">
+          <span>Today Delivery</span>
+          <h3>{{ counts['todayDeliveries'] }}</h3>
+          <em class="sub accent">Today</em>
+        </div>
+        <i class="bi bi-chevron-right kpi-arrow"></i>
+      </div>
+      <div class="kpi-card ui-card">
+        <div class="kpi-icon green"><i class="bi bi-arrow-return-left"></i></div>
+        <div class="kpi-body">
+          <span>Today Return</span>
+          <h3>{{ counts['todayReturns'] }}</h3>
+          <em class="sub accent">Today</em>
+        </div>
+        <i class="bi bi-chevron-right kpi-arrow"></i>
+      </div>
+      @if (!auth.isBranchStaff()) {
+      <div class="kpi-card ui-card">
+        <div class="kpi-icon red"><i class="bi bi-currency-rupee"></i></div>
+        <div class="kpi-body">
+          <span>Pending Payments</span>
+          <h3>{{ counts['pendingPayments'] | currency:'INR':'symbol':'1.0-0' }}</h3>
+          <em class="sub warn">Due</em>
+        </div>
+        <i class="bi bi-chevron-right kpi-arrow"></i>
+      </div>
+      }
+
+      @if (!auth.isBranchStaff()) {
+      <div class="kpi-card ui-card highlight-deposit">
+        <div class="kpi-icon indigo"><i class="bi bi-safe"></i></div>
+        <div class="kpi-body">
+          <span>Pending Deposit</span>
+          <h3>{{ counts['pendingDeposit'] | currency:'INR':'symbol':'1.0-0' }}</h3>
+          <em class="sub">Held on delivered items</em>
+        </div>
+        <i class="bi bi-chevron-right kpi-arrow"></i>
+      </div>
+      <div class="kpi-card ui-card highlight-refund">
+        <div class="kpi-icon teal"><i class="bi bi-wallet2"></i></div>
+        <div class="kpi-body">
+          <span>Refund Deposit</span>
+          <h3>{{ counts['refundDepositAmount'] | currency:'INR':'symbol':'1.0-0' }}</h3>
+          <em class="sub accent">Due today</em>
+        </div>
+        <i class="bi bi-chevron-right kpi-arrow"></i>
+      </div>
+      <div class="kpi-card ui-card">
+        <div class="kpi-icon emerald"><i class="bi bi-graph-up-arrow"></i></div>
+        <div class="kpi-body">
+          <span>Total Income</span>
+          <h3>{{ counts['totalIncome'] | currency:'INR':'symbol':'1.0-0' }}</h3>
+          <em class="sub positive">Received</em>
+        </div>
+        <i class="bi bi-chevron-right kpi-arrow"></i>
+      </div>
+      <div class="kpi-card ui-card">
+        <div class="kpi-icon orange"><i class="bi bi-receipt"></i></div>
+        <div class="kpi-body">
+          <span>Total Expenses</span>
+          <h3>{{ counts['totalExpenses'] | currency:'INR':'symbol':'1.0-0' }}</h3>
+          <em class="sub warn">Refunds paid</em>
+        </div>
+        <i class="bi bi-chevron-right kpi-arrow"></i>
+      </div>
+      <div class="kpi-card ui-card">
+        <div class="kpi-icon purple"><i class="bi bi-piggy-bank"></i></div>
+        <div class="kpi-body">
+          <span>Net Profit</span>
+          <h3>{{ counts['netProfit'] | currency:'INR':'symbol':'1.0-0' }}</h3>
+          <em class="sub positive">Income − expenses</em>
+        </div>
+        <i class="bi bi-chevron-right kpi-arrow"></i>
+      </div>
+      }
+      <div class="kpi-card ui-card">
+        <div class="kpi-icon cyan"><i class="bi bi-bag-check"></i></div>
+        <div class="kpi-body">
+          <span>Available Products</span>
+          <h3>{{ counts['availableProducts'] }}</h3>
+          <em class="sub accent">In stock</em>
+        </div>
+        <i class="bi bi-chevron-right kpi-arrow"></i>
+      </div>
+    </div>
+
+    <div class="charts-row">
+      <div class="ui-card chart-card chart-wide">
+        <div class="chart-head">
+          <h4>Monthly Income Overview</h4>
+        </div>
+        <div class="chart-canvas">
+          <canvas baseChart [data]="incomeChart.data" [options]="incomeChart.options" [type]="incomeChart.type"></canvas>
+        </div>
+      </div>
+
+      <div class="ui-card chart-card chart-donut">
+        <div class="chart-head">
+          <h4>Booking Overview</h4>
+        </div>
+        <div class="donut-wrap">
+          <div class="donut-center">
+            <strong>{{ statusTotal }}</strong>
+            <span>Total</span>
+          </div>
+          <canvas baseChart [data]="statusChart.data" [options]="statusChart.options" [type]="statusChart.type"></canvas>
+        </div>
+      </div>
+
+      <div class="ui-card chart-card top-products">
+        <div class="chart-head">
+          <h4>Top Products</h4>
+        </div>
+        <ul class="product-rank">
+          @for (p of topProducts; track p.productName; let i = $index) {
+            <li>
+              <span class="rank">{{ i + 1 }}</span>
+              <div class="bar-wrap">
+                <span class="name">{{ p.productName }}</span>
+                <div class="bar"><span [style.width]="topProductWidth(p.total)"></span></div>
+              </div>
+              <strong>{{ p.total }}</strong>
+            </li>
+          }
+          @if (!topProducts.length) {
+            <li class="empty">No booking data yet</li>
+          }
+        </ul>
+      </div>
+    </div>
+
+    <div class="tables-row">
+      <div class="ui-card table-widget">
+        <div class="widget-head">
+          <h4><i class="bi bi-truck"></i> Today Delivery</h4>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table compact">
+            <thead>
+              <tr>
+                <th>Booking No</th><th>Customer</th><th>Product</th><th>Delivery Date</th><th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (!todayDeliveries.length) {
+                <tr><td colspan="5" class="empty-row">No deliveries today</td></tr>
+              }
+              @for (r of todayDeliveries; track r['bookingNo']) {
+                <tr>
+                  <td><strong>{{ r['bookingNo'] }}</strong></td>
+                  <td>{{ r['customerName'] }}</td>
+                  <td>{{ r['productName'] }}</td>
+                  <td>{{ $any(r['deliveryDate']) | date:'dd/MM/yyyy' }}</td>
+                  <td>
+                    <span class="status-badge" [class]="statusClass(asStr(r['deliveryStatus'] ?? r['paymentStatus']))">
+                      {{ r['deliveryStatus'] || r['paymentStatus'] || 'Pending' }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <a routerLink="/reports/delivery" class="view-all">View All <i class="bi bi-arrow-right"></i></a>
+      </div>
+
+      <div class="ui-card table-widget">
+        <div class="widget-head">
+          <h4><i class="bi bi-arrow-return-left"></i> Today Return</h4>
+        </div>
+        <div class="table-responsive">
+          <table class="data-table compact">
+            <thead>
+              <tr>
+                <th>Booking No</th><th>Customer</th><th>Product</th><th>Deposit</th><th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              @if (!todayReturns.length) {
+                <tr><td colspan="5" class="empty-row">No returns today</td></tr>
+              }
+              @for (r of todayReturns; track r['bookingNo']) {
+                <tr>
+                  <td><strong>{{ r['bookingNo'] }}</strong></td>
+                  <td>{{ r['customerName'] }}</td>
+                  <td>{{ r['productName'] }}</td>
+                  <td>{{ $any(r['depositAmount']) | currency:'INR' }}</td>
+                  <td>
+                    <span class="status-badge" [class]="statusClass(asStr(r['bookingStatus']))">
+                      {{ r['bookingStatus'] }}
+                    </span>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+        <a routerLink="/reports/return" class="view-all">View All <i class="bi bi-arrow-right"></i></a>
+      </div>
+    </div>
+  }
+</div>

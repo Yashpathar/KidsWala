@@ -1,0 +1,377 @@
+<div class="page-header flex-between">
+  <div>
+    <h2>
+      <i class="bi bi-box-seam me-2"></i>
+      {{ isEditMode ? (viewOnly ? 'View Product Details' : 'Edit Product') : 'Add New Product' }}
+    </h2>
+    <p class="breadcrumb">MASTERS / Product Master / <strong>{{ isEditMode ? 'Edit' : 'Add Product' }}</strong></p>
+  </div>
+  <a routerLink="/masters/product" class="btn-outline">
+    <i class="bi bi-arrow-left"></i> Back to Product List
+  </a>
+</div>
+
+@if (message) {
+  <div [class]="messageType === 'success' ? 'alert-success' : 'alert-error'">{{ message }}</div>
+}
+
+@if (loading) {
+  <div class="ui-card loading-box">
+    <i class="bi bi-arrow-repeat spin"></i> Loading product details...
+  </div>
+} @else {
+  <div class="ui-card full-page-card">
+
+    <!-- Add Mode Segment Toggle (When Creating New Product) -->
+    @if (!isEditMode && !viewOnly) {
+      <div class="add-mode-toggle-bar">
+        <button type="button" [class.active]="addTab === 'single'" (click)="addTab = 'single'">
+          <i class="bi bi-bag"></i> Single Product Entry
+        </button>
+        <button type="button" [class.active]="addTab === 'batch'" (click)="addTab = 'batch'">
+          <i class="bi bi-collection-fill"></i> Multi-Size Batch Mode (e.g. BL-01-12 & BL-01P-12)
+        </button>
+      </div>
+    }
+
+    <div class="page-grid-layout">
+      <!-- LEFT COLUMN: Product Image & Pricing/Basic Info -->
+      <div class="left-panel">
+        <div class="panel-section image-panel">
+          <div class="image-upload-box">
+            @if (addTab === 'batch' && !isEditMode) {
+              @if (batchForm.productImage) {
+                <img [src]="imageUrl(batchForm.productImage)" class="preview" alt="" />
+              } @else {
+                <div class="preview placeholder"><i class="bi bi-camera"></i><span>Product Image</span></div>
+              }
+              @if (!viewOnly) {
+                <label class="upload-btn">
+                  <i class="bi bi-upload"></i> Upload Product Image
+                  <input type="file" accept="image/*" hidden (change)="onImageSelected($event)" />
+                </label>
+              }
+            } @else {
+              @if (form.productImage) {
+                <img [src]="imageUrl(form.productImage)" class="preview" alt="" />
+              } @else {
+                <div class="preview placeholder"><i class="bi bi-camera"></i><span>Product Image</span></div>
+              }
+              @if (!viewOnly) {
+                <label class="upload-btn">
+                  <i class="bi bi-upload"></i> Upload Product Image
+                  <input type="file" accept="image/*" hidden (change)="onImageSelected($event)" />
+                </label>
+              }
+            }
+          </div>
+        </div>
+
+        <!-- BASIC DETAILS & PRICING -->
+        <div class="panel-section">
+          <h4><i class="bi bi-currency-rupee"></i> Pricing & Stock Details</h4>
+          @if (addTab === 'batch' && !isEditMode) {
+            <div class="form-grid-2">
+              <div>
+                <label>Rent Amount (₹) *</label>
+                <input type="number" [(ngModel)]="batchForm.rentAmount" min="0" />
+              </div>
+              <div>
+                <label>Deposit Amount (₹) *</label>
+                <input type="number" [(ngModel)]="batchForm.depositAmount" min="0" />
+              </div>
+              <div>
+                <label>Discount (%)</label>
+                <input type="number" [(ngModel)]="batchForm.discountPercent" min="0" max="100" />
+              </div>
+              <div>
+                <label>Available Quantity *</label>
+                <input type="number" [(ngModel)]="batchForm.availableQuantity" min="1" />
+              </div>
+              <div>
+                <label>Rental Days</label>
+                <input type="number" [(ngModel)]="batchForm.standardRentalDays" min="1" />
+              </div>
+              <div>
+                <label>Extra Charge / Day (₹)</label>
+                <input type="number" [(ngModel)]="batchForm.extraChargePerDay" min="0" />
+              </div>
+            </div>
+          } @else {
+            <div class="form-grid-2">
+              <div>
+                <label>Rent Amount (₹) *</label>
+                <input type="number" [(ngModel)]="form.rentAmount" [disabled]="viewOnly" min="0" />
+              </div>
+              <div>
+                <label>Deposit Amount (₹) *</label>
+                <input type="number" [(ngModel)]="form.depositAmount" [disabled]="viewOnly" min="0" />
+              </div>
+              <div>
+                <label>Discount (%)</label>
+                <input type="number" [(ngModel)]="form.discountPercent" [disabled]="viewOnly" min="0" max="100" />
+              </div>
+              <div>
+                <label>Available Quantity *</label>
+                <input type="number" [(ngModel)]="form.availableQuantity" [disabled]="viewOnly" min="1" />
+              </div>
+              <div>
+                <label>Rental Days</label>
+                <input type="number" [(ngModel)]="form.standardRentalDays" [disabled]="viewOnly" min="1" />
+              </div>
+              <div>
+                <label>Extra Charge / Day (₹)</label>
+                <input type="number" [(ngModel)]="form.extraChargePerDay" [disabled]="viewOnly" min="0" />
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+
+      <!-- RIGHT COLUMN: Codes, Pair Set & Multi-Size Selector -->
+      <div class="right-panel">
+        
+        <!-- COMMON INFORMATION -->
+        <div class="panel-section">
+          <h4><i class="bi bi-tag"></i> Product Identification & Category</h4>
+          <div class="form-grid-3">
+            @if (addTab === 'batch' && !isEditMode) {
+              <div>
+                <label>Code Prefix *</label>
+                <div class="input-with-btn">
+                  <input [(ngModel)]="batchForm.codePrefix" placeholder="e.g. BL-12" (blur)="autoGenerateBatchCodes()" />
+                  <button type="button" class="btn-subtle" (click)="autoGenerateBatchCodes()" title="Auto Code Update">
+                    <i class="bi bi-magic"></i> Auto-Code
+                  </button>
+                </div>
+              </div>
+              <div>
+                <label>Product Name *</label>
+                <input [(ngModel)]="batchForm.productName" placeholder="e.g. Black Tuxedo Blazer Suit" />
+              </div>
+              <div>
+                <label>Category *</label>
+                <select [(ngModel)]="batchForm.categoryID">
+                  <option [ngValue]="null">Select Category</option>
+                  @for (c of categories; track c.categoryID) {
+                    <option [ngValue]="c.categoryID">{{ c.categoryName }}</option>
+                  }
+                </select>
+              </div>
+              <div>
+                <label>Default Color *</label>
+                <select [(ngModel)]="batchForm.colorID">
+                  <option [ngValue]="null">Select Color</option>
+                  @for (c of colors; track c.colorID) {
+                    <option [ngValue]="c.colorID">{{ c.colorName }}</option>
+                  }
+                </select>
+              </div>
+              <div>
+                <label>Age Group</label>
+                <input [(ngModel)]="batchForm.ageGroup" placeholder="e.g. 8-10 Years" />
+              </div>
+            } @else {
+              <div>
+                <label>Product Code *</label>
+                <input [(ngModel)]="form.productCode" [disabled]="viewOnly" placeholder="e.g. BL-12-02" />
+              </div>
+              <div>
+                <label>Product Name *</label>
+                <input [(ngModel)]="form.productName" [disabled]="viewOnly" placeholder="Product name" />
+              </div>
+              <div>
+                <label>Category *</label>
+                <select [(ngModel)]="form.categoryID" [disabled]="viewOnly">
+                  <option [ngValue]="null">Select Category</option>
+                  @for (c of categories; track c.categoryID) {
+                    <option [ngValue]="c.categoryID">{{ c.categoryName }}</option>
+                  }
+                </select>
+              </div>
+              <div>
+                <label>Size *</label>
+                <select [(ngModel)]="form.sizeID" [disabled]="viewOnly">
+                  <option [ngValue]="null">Select Size</option>
+                  @for (s of sizes; track s.sizeID) {
+                    <option [ngValue]="s.sizeID">{{ s.sizeName }}</option>
+                  }
+                </select>
+              </div>
+              <div>
+                <label>Color *</label>
+                <select [(ngModel)]="form.colorID" [disabled]="viewOnly">
+                  <option [ngValue]="null">Select Color</option>
+                  @for (c of colors; track c.colorID) {
+                    <option [ngValue]="c.colorID">{{ c.colorName }}</option>
+                  }
+                </select>
+              </div>
+              <div>
+                <label>Age Group</label>
+                <input [(ngModel)]="form.ageGroup" [disabled]="viewOnly" placeholder="e.g. 8-10 Years" />
+              </div>
+            }
+          </div>
+        </div>
+
+        <!-- MULTI-SIZE CHIPS SELECTOR (QUICK MULTI SIZE ADD) -->
+        @if (!isEditMode && !viewOnly) {
+          <div class="panel-section multi-size-box">
+            <div class="flex-between mb-1">
+              <h4><i class="bi bi-rulers"></i> Select Sizes to Create (Multi-Size Add)</h4>
+              <button type="button" class="btn-subtle btn-xs" (click)="selectAllSizes()">
+                <i class="bi bi-check2-all"></i> {{ selectedSizeIds.length === sizes.length ? 'Deselect All' : 'Select All Sizes' }}
+              </button>
+            </div>
+            <p class="section-subtext">Click sizes to auto-generate Top Code <code>BL-12-02</code> & Bottom Code <code>BL-12P-02</code> for each size.</p>
+            
+            <div class="size-chips-wrapper">
+              @for (s of sizes; track s.sizeID) {
+                <button type="button" class="size-chip" [class.active]="isSizeSelected(s.sizeID)" (click)="toggleSizeSelection(s)">
+                  <i class="bi" [class.bi-check-circle-fill]="isSizeSelected(s.sizeID)" [class.bi-circle]="!isSizeSelected(s.sizeID)"></i>
+                  Size {{ s.sizeName }}
+                </button>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- FULL PAIR SET SECTION (SINGLE MODE / EDIT MODE) -->
+        @if (addTab === 'single' || isEditMode) {
+          <div class="panel-section pair-section">
+            <div class="flex-between">
+              <h4><i class="bi bi-layers"></i> Full Pair / Set Setup (Blazer & Pant)</h4>
+              <label class="toggle-checkbox">
+                <input type="checkbox" [(ngModel)]="form.isFullSet" (change)="onFullSetToggle()" [disabled]="viewOnly" />
+                <span>Is Full Pair Set?</span>
+              </label>
+            </div>
+
+            @if (form.isFullSet) {
+              <div class="form-grid-2 mt-2">
+                <div class="pair-card top-card">
+                  <h5><i class="bi bi-person-standing"></i> Top Piece (Blazer / Kurta)</h5>
+                  <div class="mb-2">
+                    <label>Blazer / Top Code</label>
+                    <input [(ngModel)]="form.topCode" [disabled]="viewOnly" placeholder="e.g. BL-12-02" />
+                  </div>
+                  <div>
+                    <label>Blazer / Top Size</label>
+                    <input [(ngModel)]="form.topSize" [disabled]="viewOnly" placeholder="e.g. 02" />
+                  </div>
+                </div>
+
+                <div class="pair-card bottom-card">
+                  <h5><i class="bi bi-segmented-nav"></i> Bottom Piece (Pant / Pajama)</h5>
+                  <div class="mb-2">
+                    <label>Pant / Bottom Code</label>
+                    <input [(ngModel)]="form.bottomCode" [disabled]="viewOnly" placeholder="e.g. BL-12P-02" />
+                  </div>
+                  <div>
+                    <label>Pant / Bottom Size</label>
+                    <input [(ngModel)]="form.bottomSize" [disabled]="viewOnly" placeholder="e.g. 02 or 04" />
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- MULTI-SIZE / BATCH ITEMS TABLE -->
+        @if (addTab === 'batch' && !isEditMode && !viewOnly) {
+          <div class="panel-section">
+            <div class="flex-between mb-2">
+              <h4><i class="bi bi-list-check"></i> Generated Items / Variants List (Pairs & Sizes)</h4>
+              <button type="button" class="btn-sm-action primary" (click)="addBatchRow()">
+                <i class="bi bi-plus-lg"></i> Add Custom Row
+              </button>
+            </div>
+
+            <div class="batch-items-table-wrap">
+              <table class="batch-table">
+                <thead>
+                  <tr>
+                    <th style="width: 40px;">#</th>
+                    <th>Top / Main Code *</th>
+                    <th>Bottom / Pant Code</th>
+                    <th>Size *</th>
+                    <th>Color Override</th>
+                    <th style="width: 50px;" class="text-center">Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (item of batchForm.items; track $index) {
+                    <tr>
+                      <td class="text-center font-weight-bold">{{ $index + 1 }}</td>
+                      <td>
+                        <input [(ngModel)]="item.topCode" (ngModelChange)="item.productCode = item.topCode" placeholder="e.g. BL-01-12" class="form-input-sm" />
+                      </td>
+                      <td>
+                        <input [(ngModel)]="item.bottomCode" placeholder="e.g. BL-01P-12" class="form-input-sm" />
+                      </td>
+                      <td>
+                        <select [(ngModel)]="item.sizeID" class="form-input-sm">
+                          <option [ngValue]="null">Select Size</option>
+                          @for (s of sizes; track s.sizeID) {
+                            <option [ngValue]="s.sizeID">{{ s.sizeName }}</option>
+                          }
+                        </select>
+                      </td>
+                      <td>
+                        <select [(ngModel)]="item.colorID" class="form-input-sm">
+                          <option [ngValue]="null">Default Color</option>
+                          @for (c of colors; track c.colorID) {
+                            <option [ngValue]="c.colorID">{{ c.colorName }}</option>
+                          }
+                        </select>
+                      </td>
+                      <td class="text-center">
+                        <button type="button" class="btn-remove-row" (click)="removeBatchRow($index)" [disabled]="batchForm.items.length <= 1" title="Remove Row">
+                          <i class="bi bi-trash"></i>
+                        </button>
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+
+        <!-- DESCRIPTION -->
+        <div class="panel-section">
+          <h4><i class="bi bi-card-text"></i> Description & Product Notes</h4>
+          @if (addTab === 'batch' && !isEditMode) {
+            <textarea [(ngModel)]="batchForm.description" rows="2" placeholder="Enter product details, fabric specs, care instructions..."></textarea>
+          } @else {
+            <textarea [(ngModel)]="form.description" [disabled]="viewOnly" rows="2" placeholder="Enter product details, fabric specs, care instructions..."></textarea>
+          }
+        </div>
+
+      </div>
+    </div>
+
+    <!-- BOTTOM ACTION FOOTER -->
+    <div class="page-footer-actions">
+      <a routerLink="/masters/product" class="btn-outline">
+        <i class="bi bi-x-circle"></i> Cancel
+      </a>
+
+      @if (viewOnly) {
+        <a [routerLink]="['/masters/edit-product', productId]" class="btn-primary">
+          <i class="bi bi-pencil-square"></i> Edit Product
+        </a>
+      } @else if (addTab === 'batch' && !isEditMode) {
+        <button type="button" class="btn-primary" (click)="saveBatch()" [disabled]="saving">
+          <i class="bi bi-check-all"></i> {{ saving ? 'Creating Products...' : 'Save All ' + batchForm.items.length + ' Products' }}
+        </button>
+      } @else {
+        <button type="button" class="btn-primary" (click)="save()" [disabled]="saving">
+          <i class="bi bi-check-lg"></i> {{ saving ? 'Saving Product...' : (isEditMode ? 'Save Changes' : 'Add Product') }}
+        </button>
+      }
+    </div>
+
+  </div>
+}

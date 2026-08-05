@@ -1,0 +1,49 @@
+<div class="page-header flex-between">
+  <div><h2>Branch Master</h2><p class="breadcrumb">Company → Branch setup</p></div>
+  <button type="button" class="btn-primary" (click)="openAdd()"><i class="bi bi-plus-lg"></i> Add Branch</button>
+</div>
+@if (message) { <div class="alert-success">{{ message }}</div> }
+<div class="ui-card table-wrap">
+  <table class="data-table">
+    <thead><tr><th>Company</th><th>Branch</th><th>Code</th><th>Mobile</th><th>Email</th><th></th></tr></thead>
+    <tbody>
+      @for (b of rows; track b.branchID) {
+        <tr>
+          <td>{{ b.companyName }}</td>
+          <td><strong>{{ b.branchName }}</strong></td>
+          <td>{{ b.branchCode }}</td>
+          <td>{{ b.mobileNo }}</td>
+          <td>{{ b.email }}</td>
+          <td><button type="button" class="btn-sm" (click)="openEdit(b)">Edit</button></td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
+@if (showModal) {
+  <div class="app-modal-backdrop" (click)="showModal=false">
+    <div class="app-modal-panel ui-card" (click)="$event.stopPropagation()">
+      <h3>{{ form.branchID ? 'Edit' : 'Add' }} Branch</h3>
+      <label>Company *</label>
+      <select [(ngModel)]="form.companyID">
+        @for (c of companies; track c.companyID) {
+          <option [ngValue]="c.companyID ?? c.CompanyID">{{ c.companyName ?? c.CompanyName }}</option>
+        }
+      </select>
+      <label>Branch Name *</label>
+      <input [(ngModel)]="form.branchName" />
+      <label>Branch Code</label>
+      <input [(ngModel)]="form.branchCode" />
+      <label>Mobile</label>
+      <input [(ngModel)]="form.mobileNo" />
+      <label>Email</label>
+      <input [(ngModel)]="form.email" />
+      <label>Address</label>
+      <textarea [(ngModel)]="form.address" rows="2"></textarea>
+      <div class="modal-actions">
+        <button type="button" class="btn-outline" (click)="showModal=false">Cancel</button>
+        <button type="button" class="btn-primary" (click)="save()" [disabled]="saving">Save</button>
+      </div>
+    </div>
+  </div>
+}

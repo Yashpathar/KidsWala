@@ -1,0 +1,83 @@
+@if (booking) {
+  <div class="invoice-actions no-print">
+    <button class="btn-primary" (click)="print()">Print Invoice</button>
+    <button class="btn-outline" (click)="sendWhatsApp()">Send WhatsApp</button>
+  </div>
+
+  <div class="invoice glass-card" id="invoice">
+    <div class="invoice-header">
+      <div>
+        <h1>👑 Kids Fashion Rental Wear</h1>
+        <p>Ahmedabad, Gujarat | GST: GSTKWN001</p>
+      </div>
+      <div class="invoice-meta">
+        <h2>INVOICE</h2>
+        <p><strong>{{ booking.bookingNo }}</strong></p>
+        <p>Date: {{ booking.bookingDate | date:'dd-MM-yyyy' }}</p>
+      </div>
+    </div>
+
+    <div class="invoice-grid">
+      <div>
+        <h4>Customer</h4>
+        <p>{{ booking.customerName }}</p>
+        <p>{{ booking.contactNo1 }}</p>
+        <p>{{ booking.address }}, {{ booking.city }}</p>
+      </div>
+      <div>
+        <h4>Rental Details</h4>
+        <p>Rental Days: <strong>{{ booking.rentDays }}</strong></p>
+        <p>Delivery: {{ booking.deliveryDate | date:'dd-MM-yyyy' }}</p>
+        <p>Return Due: {{ booking.returnDate | date:'dd-MM-yyyy' }}</p>
+        @if (booking.actualReturnDate) {
+          <p>Actual Return: {{ booking.actualReturnDate | date:'dd-MM-yyyy' }}</p>
+        }
+      </div>
+    </div>
+
+    <table class="data-table">
+      <thead>
+        <tr><th>Product</th><th>Code</th><th>Size</th><th>Rent</th><th>Deposit</th><th>Final Rent</th></tr>
+      </thead>
+      <tbody>
+        @for (item of items; track item.bookingDetailID) {
+          <tr>
+            <td>{{ item.productName }}</td>
+            <td>{{ item.productCode }}</td>
+            <td>{{ item.size }}</td>
+            <td>{{ item.rentAmount | currency:'INR' }}</td>
+            <td>{{ item.depositAmount | currency:'INR' }}</td>
+            <td>{{ item.finalRentAmount | currency:'INR' }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+
+    <div class="invoice-totals">
+      <div><span>Total Rent</span><strong>{{ booking.totalRentAmount | currency:'INR' }}</strong></div>
+      <div><span>Deposit</span><strong>{{ booking.depositAmount | currency:'INR' }}</strong></div>
+      <div><span>Advance Paid (50%)</span><strong>{{ booking.advanceAmount | currency:'INR' }}</strong></div>
+      <div><span>Due at Delivery</span><strong>{{ booking.remainingAmount | currency:'INR' }}</strong></div>
+      @if (booking.extraDays > 0) {
+        <div class="extra"><span>Extra Days ({{ booking.extraDays }})</span><strong>{{ booking.extraChargeAmount | currency:'INR' }}</strong></div>
+        <div><span>Deposit Refund</span><strong>{{ booking.finalRefundAmount | currency:'INR' }}</strong></div>
+        <div><span>Final Profit</span><strong>{{ booking.finalProfitAmount | currency:'INR' }}</strong></div>
+      }
+      <div class="grand"><span>Grand Total</span><strong>{{ booking.totalAmount | currency:'INR' }}</strong></div>
+    </div>
+
+    <div class="signature">
+      <p>Authorized Signature</p>
+      <div class="sign-line"></div>
+    </div>
+  </div>
+
+  <div class="glass-card whatsapp-panel no-print">
+    <h4>Send WhatsApp Bill</h4>
+    <label>Phone</label>
+    <input [(ngModel)]="whatsappPhone" />
+    <label>Message</label>
+    <textarea [(ngModel)]="whatsappMsg" rows="8"></textarea>
+    <button class="btn-primary" (click)="sendWhatsApp()">Send on WhatsApp</button>
+  </div>
+}

@@ -1,0 +1,281 @@
+<div class="page-header flex-between">
+  <div>
+    <h2>Product Master</h2>
+    <p class="breadcrumb">MASTERS / <strong>Product Master</strong></p>
+  </div>
+  <a routerLink="/masters/add-product" class="btn-primary">
+    <i class="bi bi-plus-lg"></i> Add Product
+  </a>
+</div>
+
+@if (message) {
+  <div [class]="messageType === 'success' ? 'alert-success' : 'alert-error'">{{ message }}</div>
+}
+@if (loading && !products.length) {
+  <div class="glass-card loading-box">Loading products...</div>
+}
+
+@if (message) {
+  <div [class]="messageType === 'success' ? 'alert-success' : 'alert-error'">{{ message }}</div>
+}
+@if (loading && !products.length) {
+  <div class="glass-card loading-box">Loading products...</div>
+}
+
+<div class="ui-card filters flex-between">
+  <div class="search-box">
+    <i class="bi bi-search"></i>
+    <input [(ngModel)]="search" placeholder="Search code (BL-01), name, category, size, color..." />
+  </div>
+
+  <!-- VIEW MODE TAB SWITCHER -->
+  <div class="view-mode-tabs">
+    <button type="button" [class.active]="viewType === 'grouped'" (click)="viewType = 'grouped'">
+      <i class="bi bi-collection"></i> Grouped Design View (BL-01)
+    </button>
+    <button type="button" [class.active]="viewType === 'flat'" (click)="viewType = 'flat'">
+      <i class="bi bi-list-ul"></i> All Individual Sizes
+    </button>
+  </div>
+</div>
+
+<!-- ================= GROUPED DESIGN VIEW (BL-01) ================= -->
+@if (viewType === 'grouped') {
+  <div class="ui-card table-card table-wrap">
+    <table class="data-table grouped-data-table">
+      <thead>
+        <tr>
+          <th style="width: 40px;"></th>
+          <th style="width: 60px;">Image</th>
+          <th>Design Code</th>
+          <th>Name</th>
+          <th>Category</th>
+          <th>Available Sizes</th>
+          <th>Color</th>
+          <th>Rent</th>
+          <th>Deposit</th>
+          <th>Total Qty</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (!groupedProducts.length && !loading) {
+          <tr><td colspan="11" class="empty-row">No products found</td></tr>
+        }
+        @for (g of groupedProducts; track g.groupCode || $index) {
+          <!-- MASTER GROUP ROW (Click to Open All Sizes) -->
+          <tr class="row-hover group-header-row" (click)="toggleGroup(g.groupCode)">
+            <td class="text-center expand-col">
+              <i class="bi expand-icon" [class.bi-chevron-down]="isGroupExpanded(g.groupCode)" [class.bi-chevron-right]="!isGroupExpanded(g.groupCode)"></i>
+            </td>
+            <td class="img-cell">
+              @if (g.productImage) {
+                <img [src]="imageUrl(g.productImage)" [alt]="g.productName" />
+              } @else {
+                <span class="img-ph"><i class="bi bi-image"></i></span>
+              }
+            </td>
+            <td>
+              <strong class="code-badge main-group">{{ g.groupCode }}</strong>
+              <small class="group-count-tag"><i class="bi bi-layers"></i> {{ g.items.length }} {{ g.items.length === 1 ? 'Size' : 'Sizes' }}</small>
+            </td>
+            <td>
+              <div class="product-name-cell">
+                <span class="name-text">{{ g.productName }}</span>
+                @if (g.ageGroup) {
+                  <small class="age-badge"><i class="bi bi-person"></i> {{ g.ageGroup }}</small>
+                }
+              </div>
+            </td>
+            <td><span class="category-pill">{{ g.categoryName }}</span></td>
+            <td>
+              <div class="sizes-chips-row">
+                @for (item of g.items; track item.productID) {
+                  <span class="size-chip-sm" title="Click row to view size details">
+                    Size {{ getSizeName(item) }}
+                  </span>
+                }
+              </div>
+            </td>
+            <td>
+              <div class="color-cell">
+                @if (g.colorCode) {
+                  <span class="color-swatch" [style.background-color]="g.colorCode"></span>
+                }
+                <span>{{ g.colorName }}</span>
+              </div>
+            </td>
+            <td class="money-cell font-weight-bold">{{ g.rentAmount | currency:'INR':'symbol':'1.0-2' }}</td>
+            <td class="money-cell">{{ g.depositAmount | currency:'INR':'symbol':'1.0-2' }}</td>
+            <td><span class="qty-badge">{{ g.totalQuantity }}</span></td>
+            <td class="text-end actions-cell" (click)="$event.stopPropagation()">
+              <button type="button" class="btn-toggle-expand" (click)="toggleGroup(g.groupCode)">
+                <i class="bi" [class.bi-eye-slash]="isGroupExpanded(g.groupCode)" [class.bi-eye]="!isGroupExpanded(g.groupCode)"></i>
+                {{ isGroupExpanded(g.groupCode) ? 'Close Sizes' : 'Open All Sizes (' + g.items.length + ')' }}
+              </button>
+            </td>
+          </tr>
+
+          <!-- EXPANDED INNER SIZES TABLE -->
+          @if (isGroupExpanded(g.groupCode)) {
+            <tr class="expanded-detail-row">
+              <td colspan="11" class="nested-table-cell">
+                <div class="nested-sizes-container">
+                  <div class="nested-header flex-between">
+                    <h5><i class="bi bi-rulers"></i> All Sizes Under <strong>{{ g.groupCode }}</strong> ({{ g.productName }})</h5>
+                    <span class="nested-subtext">Click Edit to modify or View to inspect item details</span>
+                  </div>
+                  <table class="nested-data-table">
+                    <thead>
+                      <tr>
+                        <th style="width: 40px;">#</th>
+                        <th>Variant Code</th>
+                        <th>Top Code</th>
+                        <th>Bottom Code</th>
+                        <th>Size</th>
+                        <th>Color</th>
+                        <th>Rent</th>
+                        <th>Deposit</th>
+                        <th>Qty</th>
+                        <th>Status</th>
+                        <th class="text-end">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (item of g.items; track item.productID || $index) {
+                        <tr>
+                          <td class="text-center font-weight-bold">{{ $index + 1 }}</td>
+                          <td><strong class="code-badge">{{ item.productCode }}</strong></td>
+                          <td><small class="text-top">{{ item.topCode || item.productCode }}</small></td>
+                          <td><small class="text-btm">{{ item.bottomCode || (item.productCode + '-P') }}</small></td>
+                          <td><span class="size-badge">{{ getSizeName(item) }}</span></td>
+                          <td>{{ getColorName(item) }}</td>
+                          <td>{{ item.rentAmount | currency:'INR':'symbol':'1.0-2' }}</td>
+                          <td>{{ item.depositAmount | currency:'INR':'symbol':'1.0-2' }}</td>
+                          <td><span class="qty-badge" [class.out-of-stock]="item.availableQuantity <= 0">{{ item.availableQuantity }}</span></td>
+                          <td>
+                            <span class="status-badge" [class.delivered]="item.isAvailable" [class.late]="!item.isAvailable">
+                              {{ item.isAvailable ? 'Available' : 'Rented' }}
+                            </span>
+                          </td>
+                          <td class="text-end actions-cell">
+                            <div class="action-buttons">
+                              <a [routerLink]="['/masters/edit-product', item.productID]" [queryParams]="{ view: true }" class="btn-icon-action" title="View Details">
+                                <i class="bi bi-eye"></i>
+                              </a>
+                              <a [routerLink]="['/masters/edit-product', item.productID]" class="btn-icon-action" title="Edit Product">
+                                <i class="bi bi-pencil"></i>
+                              </a>
+                              <button type="button" class="btn-icon-action danger" (click)="delete(item)" title="Delete Product">
+                                <i class="bi bi-trash"></i>
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  </div>
+}
+
+<!-- ================= ALL INDIVIDUAL SIZES FLAT VIEW ================= -->
+@if (viewType === 'flat') {
+  <div class="ui-card table-card table-wrap">
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Image</th>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Category</th>
+          <th>Size</th>
+          <th>Color</th>
+          <th>Rent</th>
+          <th>Deposit</th>
+          <th>Qty</th>
+          <th>Status</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (!filtered.length && !loading) {
+          <tr><td colspan="11" class="empty-row">No products found</td></tr>
+        }
+        @for (p of filtered; track p.productID || $index) {
+          <tr class="row-hover">
+            <td class="img-cell">
+              @if (p.productImage) {
+                <img [src]="imageUrl(p.productImage)" [alt]="p.productName" />
+              } @else {
+                <span class="img-ph"><i class="bi bi-image"></i></span>
+              }
+            </td>
+            <td><strong class="code-badge">{{ p.productCode }}</strong></td>
+            <td>
+              <div class="product-name-cell">
+                <span class="name-text">{{ p.productName }}</span>
+                @if (p.ageGroup) {
+                  <small class="age-badge"><i class="bi bi-person"></i> {{ p.ageGroup }}</small>
+                }
+              </div>
+            </td>
+            <td>
+              <span class="category-pill">{{ getCategoryName(p) }}</span>
+            </td>
+            <td>
+              @if (p.isFullSet) {
+                <div class="full-set-cell">
+                  <span class="set-badge"><i class="bi bi-layers-fill"></i> Full Pair</span>
+                  <div class="pair-details">
+                    <span>Top: <b>{{ p.topSize || getSizeName(p) }}</b> <small>({{ p.topCode || p.productCode }})</small></span>
+                    <span>Btm: <b>{{ p.bottomSize || getSizeName(p) }}</b> <small>({{ p.bottomCode || (p.productCode + '-P') }})</small></span>
+                  </div>
+                </div>
+              } @else {
+                <span class="size-badge">{{ getSizeName(p) }}</span>
+              }
+            </td>
+            <td>
+              <div class="color-cell">
+                @if (getColorCode(p)) {
+                  <span class="color-swatch" [style.background-color]="getColorCode(p)"></span>
+                }
+                <span>{{ getColorName(p) }}</span>
+              </div>
+            </td>
+            <td class="money-cell font-weight-bold">{{ p.rentAmount | currency:'INR':'symbol':'1.0-2' }}</td>
+            <td class="money-cell">{{ p.depositAmount | currency:'INR':'symbol':'1.0-2' }}</td>
+            <td>
+              <span class="qty-badge" [class.out-of-stock]="p.availableQuantity <= 0">{{ p.availableQuantity }}</span>
+            </td>
+            <td>
+              <span class="status-badge" [class.delivered]="p.isAvailable" [class.late]="!p.isAvailable">
+                {{ p.isAvailable ? 'Available' : 'Rented' }}
+              </span>
+            </td>
+            <td class="text-end actions-cell">
+              <div class="action-buttons">
+                <a [routerLink]="['/masters/edit-product', p.productID]" [queryParams]="{ view: true }" class="btn-icon-action" title="View Details">
+                  <i class="bi bi-eye"></i>
+                </a>
+                <a [routerLink]="['/masters/edit-product', p.productID]" class="btn-icon-action" title="Edit Product">
+                  <i class="bi bi-pencil"></i>
+                </a>
+                <button type="button" class="btn-icon-action danger" (click)="delete(p)" title="Delete Product">
+                  <i class="bi bi-trash"></i>
+                </button>
+              </div>
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+}

@@ -1,0 +1,72 @@
+<div class="page-header flex-between">
+  <div>
+    <h2>Role Rights Master</h2>
+    <p class="breadcrumb">View · Create · Update · Delete per menu</p>
+  </div>
+  <button type="button" class="btn-primary" (click)="showAddRole = true">
+    <i class="bi bi-plus-lg"></i> Add Role
+  </button>
+</div>
+
+@if (message) { <div class="alert-success">{{ message }}</div> }
+
+<div class="ui-card rights-card">
+  <div class="toolbar">
+    <div>
+      <label>Select Role</label>
+      <select [(ngModel)]="selectedRoleId" (change)="loadRights()">
+        @for (r of roles; track r.roleID) {
+          <option [ngValue]="r.roleID ?? r.RoleID">{{ r.roleName ?? r.RoleName }}</option>
+        }
+      </select>
+    </div>
+    <button type="button" class="btn-primary" (click)="save()">Save Rights</button>
+  </div>
+
+  <div class="table-wrap">
+    <table class="rights-matrix">
+      <thead>
+        <tr>
+          <th>Menu</th>
+          <th class="center">All</th>
+          <th class="center">View</th>
+          <th class="center">Create</th>
+          <th class="center">Update</th>
+          <th class="center">Delete</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (m of menus; track m.key) {
+          <tr>
+            <td class="menu-name">{{ m.label }}</td>
+            <td class="center">
+              <input type="checkbox" [checked]="rowAllOn(m.key)" (change)="toggleRow(m.key, $any($event.target).checked)" />
+            </td>
+            <td class="center"><input type="checkbox" [(ngModel)]="rights[m.key].isView" /></td>
+            <td class="center"><input type="checkbox" [(ngModel)]="rights[m.key].isCreate" /></td>
+            <td class="center"><input type="checkbox" [(ngModel)]="rights[m.key].isUpdate" /></td>
+            <td class="center"><input type="checkbox" [(ngModel)]="rights[m.key].isDelete" /></td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>
+
+@if (showAddRole) {
+  <div class="app-modal-backdrop" (click)="showAddRole = false">
+    <div class="app-modal-panel ui-card role-modal" (click)="$event.stopPropagation()">
+      <h3>Add New Role</h3>
+      <label>Role Name *</label>
+      <input [(ngModel)]="newRoleName" placeholder="e.g. Store Manager" />
+      <label>Description</label>
+      <input [(ngModel)]="newRoleDesc" placeholder="Optional" />
+      <div class="modal-actions">
+        <button type="button" class="btn-outline" (click)="showAddRole = false">Cancel</button>
+        <button type="button" class="btn-primary" (click)="addRole()" [disabled]="savingRole">
+          {{ savingRole ? 'Adding...' : 'Add Role' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

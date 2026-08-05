@@ -1,0 +1,14 @@
+using KidsFashionRental.API.Common;
+using KidsFashionRental.API.Model;
+
+namespace KidsFashionRental.API.IRepository;
+
+public interface IProductRepository
+{
+    Task<ApiResult> GetAllAsync(int? companyId);
+    Task<ApiResult> GetByIdAsync(int id);
+    Task<ApiResult> GetByCodeAsync(string productCode);
+    Task<ApiResult> InsertAsync(ProductMasterModel model);
+    Task<ApiResult> UpdateAsync(ProductMasterModel model);
+    Task<ApiResult> DeleteAsync(int id, int? modifiedBy);
+}

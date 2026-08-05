@@ -1,0 +1,428 @@
+<div class="page-header flex-between booking-header anim-fade-in">
+  <div>
+    <h2>Add New Booking</h2>
+    <p class="breadcrumb">Create new rental booking</p>
+  </div>
+  <div class="header-actions">
+    <a routerLink="/booking/list" class="btn-outline"><i class="bi bi-arrow-left"></i> <span>Back</span></a>
+    <button type="button" class="btn-primary btn-save-desktop" (click)="saveBooking()" [disabled]="saving || !items.length">
+      <i class="bi bi-save"></i> {{ saving ? 'Saving...' : 'Save Booking' }}
+    </button>
+  </div>
+</div>
+
+@if (message) {
+  <div class="anim-slide-down" [class]="messageType === 'success' ? 'alert-success' : 'alert-error'">{{ message }}</div>
+}
+
+<div class="booking-page">
+  <div class="main-col">
+    <div class="cards-row-two">
+      <div class="ui-card section-card customer-card anim-card" style="--anim-order: 1">
+        <h4><i class="bi bi-person"></i> Customer Details</h4>
+        <form [formGroup]="customerForm" class="customer-form">
+          <label>Customer Name <span class="req">*</span></label>
+          <input formControlName="fullName" placeholder="Full name" />
+
+          <label>Contact No. 1 <span class="req">*</span> <small>(10 digits — auto search)</small></label>
+          <input class="mobile-input" formControlName="contactNo1" placeholder="10-digit mobile" maxlength="10"
+            inputmode="numeric" (input)="onMobileInput()" />
+          @if (customerLookupLoading) {
+            <span class="customer-tag loading anim-pulse"><i class="bi bi-hourglass-split"></i> Searching...</span>
+          }
+          @if (customerFound && !customerLookupLoading) {
+            <span class="customer-tag found anim-pop"><i class="bi bi-check-circle"></i> Customer found</span>
+          }
+          @if (showNewCustomer && !customerLookupLoading && !customerFound) {
+            <span class="customer-tag new anim-pop"><i class="bi bi-person-plus"></i> New customer — auto-saved on booking</span>
+          }
+          @if (!customerForm.value.customerID && customerForm.get('contactNo1')?.invalid && customerForm.get('contactNo1')?.touched) {
+            <small class="field-error">Enter valid 10-digit mobile</small>
+          }
+
+          <div class="form-row-2">
+            <div>
+              <label>Contact No. 2</label>
+              <input formControlName="contactNo2" placeholder="Optional" maxlength="10" inputmode="numeric" />
+            </div>
+            <div>
+              <label>City</label>
+              <input formControlName="city" placeholder="City" />
+            </div>
+          </div>
+
+          <label>Address</label>
+          <textarea formControlName="address" rows="2" placeholder="Full address"></textarea>
+        </form>
+      </div>
+
+      <div class="ui-card section-card booking-details-card anim-card" style="--anim-order: 2">
+        <h4><i class="bi bi-calendar3"></i> Booking Details</h4>
+        <form [formGroup]="bookingForm">
+          <label>Booking Created By</label>
+          <input class="readonly-sm" [value]="auth.currentUser()?.fullName + ' (' + auth.currentUser()?.roleName + ')'" readonly />
+          <label>Booking Date</label>
+          <input type="date" formControlName="bookingDate" />
+          <div class="date-pair">
+            <div>
+              <label>Delivery Date</label>
+              <input type="date" formControlName="deliveryDate" />
+            </div>
+            <div>
+              <label>Return Date</label>
+              <input type="date" formControlName="returnDate" />
+            </div>
+          </div>
+          <div class="day-badges">
+            <div class="day-box purple anim-badge"><span>Total Days</span><strong>{{ rentDays }}</strong></div>
+            <div class="day-box blue anim-badge"><span>Standard</span><strong>{{ standardDays }}</strong></div>
+            @if (extraDays > 0) {
+              <div class="day-box orange anim-badge">
+                <span>Extra</span>
+                <strong>{{ extraDays }}d</strong>
+                <em>{{ totals.extraCharge | currency:'INR' }}</em>
+              </div>
+            } @else {
+              <div class="day-box muted anim-badge"><span>Extra</span><strong>0</strong></div>
+            }
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="ui-card section-card product-section anim-card" style="--anim-order: 3">
+      <h4><i class="bi bi-bag"></i> Product Details</h4>
+      <p class="product-hint">Each product can be added only once per booking.</p>
+      <div class="product-layout">
+        <div class="product-search-col">
+          @if (items.length) {
+            <div class="added-chips anim-fade-in">
+              <span class="chips-label">Added:</span>
+              @for (item of items; track item.productID) {
+                <span class="chip"><i class="bi bi-check2"></i> {{ item.productCode }}</span>
+              }
+            </div>
+          }
+          <div class="search-wrap">
+            <i class="bi bi-search"></i>
+            <input
+              [(ngModel)]="productSearch"
+              [ngModelOptions]="{ standalone: true }"
+              (input)="onProductInput()"
+              (focus)="onProductInput()"
+              placeholder="Type Product Code / Name"
+              autocomplete="off"
+            />
+          </div>
+          @if (duplicateProductMsg) {
+            <div class="alert-duplicate anim-shake"><i class="bi bi-exclamation-triangle"></i> {{ duplicateProductMsg }}</div>
+          }
+          @if (showSuggestions && productSuggestions.length) {
+            <ul class="suggestions anim-slide-down">
+              @for (p of productSuggestions; track p.productID) {
+                <li (mousedown)="selectProduct(p)">
+                  <strong>{{ p.productCode }}</strong> — {{ p.productName }}
+                  <small>{{ p.size }} / {{ p.color }}</small>
+                </li>
+              }
+            </ul>
+          }
+          @if (showSuggestions && productSearch && !productSuggestions.length) {
+            <p class="no-suggest">No available products — or already added.</p>
+          }
+          @if (availability?.success === 1) {
+            <div class="alert-success anim-pop"><i class="bi bi-check-circle"></i> Available</div>
+          }
+          @if (availability?.success === 0) {
+            <div class="alert-danger anim-pop">
+              <i class="bi bi-x-circle"></i> Not available — {{ availability?.customerName }}<br />
+              {{ availability?.deliveryDate | date:'dd-MM-yyyy' }} – {{ availability?.returnDate | date:'dd-MM-yyyy' }}
+            </div>
+          }
+        </div>
+
+        <div class="product-action-col" [class.has-product]="selectedProduct">
+          @if (selectedProduct) {
+            <div class="product-preview anim-slide-in">
+              @if (selectedProduct.productImage) {
+                <img [src]="productImageUrl(selectedProduct.productImage)" alt="" class="preview-img" />
+              } @else {
+                <div class="preview-img placeholder"><i class="bi bi-image"></i></div>
+              }
+              <div class="preview-info">
+                <h5>{{ selectedProduct.productName }}</h5>
+                <p><span class="code-tag"><i class="bi bi-upc-scan"></i> {{ selectedProduct.productCode }}</span></p>
+                <p><span>Category</span> {{ selectedProduct.categoryName || 'N/A' }}</p>
+                <p><span>Size</span> {{ selectedProduct.size || 'N/A' }} · <span>Color</span> {{ selectedProduct.color || 'N/A' }}</p>
+                <p><span>Rent</span> {{ selectedProduct.rentAmount | currency:'INR' }}</p>
+                <p><span>Deposit</span> {{ selectedProduct.depositAmount | currency:'INR' }}</p>
+                <span class="qty-badge">Available: {{ selectedProduct.availableQuantity ?? 1 }}</span>
+              </div>
+            </div>
+            <div class="pair-booking-config">
+              <label class="toggle-checkbox-sm">
+                <input type="checkbox" [(ngModel)]="selectedIsFullSet" (change)="onPairSizeChange()" [ngModelOptions]="{ standalone: true }" />
+                <span>Full Pair Set (Blazer & Pant)</span>
+              </label>
+
+              @if (selectedIsFullSet) {
+                <div class="row-2 pair-sizes-row">
+                  <div>
+                    <label>Blazer / Top Size * <small class="code-lbl">Code: <b>{{ computedTopCode }}</b></small></label>
+                    <input [(ngModel)]="selectedTopSize" (input)="onPairSizeChange()" [ngModelOptions]="{ standalone: true }" placeholder="e.g. 12" />
+                  </div>
+                  <div>
+                    <label>Pant / Bottom Size * <small class="code-lbl">Code: <b>{{ computedBottomCode }}</b></small></label>
+                    <input [(ngModel)]="selectedBottomSize" (input)="onPairSizeChange()" [ngModelOptions]="{ standalone: true }" placeholder="e.g. 13" />
+                  </div>
+                </div>
+
+                @if (sizeValidationError) {
+                  <div class="alert-size-warning anim-shake">
+                    <i class="bi bi-exclamation-octagon-fill"></i> {{ sizeValidationError }}
+                  </div>
+                }
+
+                <div class="pair-availability-tags anim-fade-in">
+                  <span class="tag-status ok">
+                    <i class="bi bi-check-circle-fill"></i> Blazer: <b>{{ computedTopCode }}</b> (Size {{ selectedTopSize || selectedProduct.size || '-' }}): Available
+                  </span>
+                  @if (isPantInStock) {
+                    <span class="tag-status ok">
+                      <i class="bi bi-check-circle-fill"></i> Pant: <b>{{ computedBottomCode }}</b> (Size {{ selectedBottomSize || selectedProduct.size || '-' }}): Available
+                    </span>
+                  } @else {
+                    <span class="tag-status err">
+                      <i class="bi bi-x-circle-fill"></i> Pant: <b>{{ computedBottomCode }}</b> (Size {{ selectedBottomSize || '-' }}): Not Added in Stock
+                    </span>
+                  }
+                </div>
+              }
+            </div>
+
+            <div class="row-2">
+              <div>
+                <label>Discount (%)</label>
+                <input type="number" [(ngModel)]="discountPercent" [ngModelOptions]="{ standalone: true }" min="0" max="100" />
+              </div>
+              <div>
+                <label>Final Rent</label>
+                <input readonly [value]="(selectedProduct.rentAmount - (selectedProduct.rentAmount * discountPercent / 100)) | currency:'INR'" />
+              </div>
+            </div>
+            <button class="btn-primary btn-add" type="button" (click)="addItem()" [disabled]="availability?.success === 0">
+              <i class="bi bi-plus-lg"></i> Add to Booking
+            </button>
+          } @else {
+            <div class="product-empty">
+              <i class="bi bi-bag-plus anim-float"></i>
+              <p>Search by code or name, then add to the list below.</p>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <div class="ui-card items-card anim-card" style="--anim-order: 4">
+      <h4><i class="bi bi-list-ul"></i> Booking Items @if (items.length) { <span class="item-badge">{{ items.length }}</span> }</h4>
+
+      <div class="table-desktop table-responsive">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width: 36px;">#</th>
+              <th style="width: 54px;">Image</th>
+              <th>Code</th>
+              <th>Product</th>
+              <th>Size</th>
+              <th>Color</th>
+              <th>Rent</th>
+              <th>Disc %</th>
+              <th>Final Rent</th>
+              <th>Deposit</th>
+              <th>Total</th>
+              <th style="width: 44px;"></th>
+            </tr>
+          </thead>
+          <tbody>
+            @if (!items.length) {
+              <tr><td colspan="12" class="empty-row">No items added yet</td></tr>
+            }
+            @for (item of items; track item.productID; let i = $index) {
+              <tr [class.item-row-new]="item.productID === lastAddedProductId">
+                <td>{{ i + 1 }}</td>
+                <td class="img-cell">
+                  @if (item.productImage) {
+                    <img [src]="productImageUrl(item.productImage)" [alt]="item.productName" />
+                  } @else {
+                    <span class="img-ph"><i class="bi bi-image"></i></span>
+                  }
+                </td>
+                <td>
+                  <strong class="code-badge">{{ item.productCode }}</strong>
+                  @if (item.isFullSet && (item.topCode || item.bottomCode)) {
+                    <div class="pair-code-sub">
+                      <small class="text-top"><i class="bi bi-tag-fill"></i> Top: <b>{{ item.topCode || item.productCode }}</b></small>
+                      <small class="text-btm"><i class="bi bi-tag-fill"></i> Btm: <b>{{ item.bottomCode }}</b></small>
+                    </div>
+                  }
+                </td>
+                <td><strong>{{ item.productName }}</strong></td>
+                <td>
+                  @if (item.isFullSet) {
+                    <div class="full-pair-item-badge">
+                      <span class="pair-tag">Pair</span>
+                      <div><small>Blazer: <b>{{ item.topSize || '12' }}</b></small></div>
+                      <div><small>Pant: <b>{{ item.bottomSize || '13' }}</b></small></div>
+                    </div>
+                  } @else {
+                    {{ item.size }}
+                  }
+                </td>
+                <td>{{ item.color }}</td>
+                <td>{{ item.rentAmount | currency:'INR' }}</td>
+                <td>{{ item.discountPercent }}%</td>
+                <td>{{ item.finalRentAmount | currency:'INR' }}</td>
+                <td>{{ item.depositAmount | currency:'INR' }}</td>
+                <td><strong>{{ itemLineTotal(item) | currency:'INR' }}</strong></td>
+                <td><button type="button" class="btn-icon-action danger" (click)="removeItem(i)"><i class="bi bi-trash"></i></button></td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="items-mobile-list">
+        @if (!items.length) {
+          <p class="empty-mobile">No items added yet</p>
+        }
+        @for (item of items; track item.productID; let i = $index) {
+          <article class="item-mobile-card" [class.item-row-new]="item.productID === lastAddedProductId">
+            <div class="imc-head">
+              <strong>{{ item.productCode }}</strong> — {{ item.productName }}
+              <button type="button" class="btn-icon-action danger" (click)="removeItem(i)"><i class="bi bi-trash"></i></button>
+            </div>
+            <div class="imc-grid">
+              <span>Size <b>{{ item.size }}</b></span>
+              <span>Color <b>{{ item.color }}</b></span>
+              <span>Rent <b>{{ item.rentAmount | currency:'INR' }}</b></span>
+              <span>Disc <b>{{ item.discountPercent }}%</b></span>
+              <span>Final <b>{{ item.finalRentAmount | currency:'INR' }}</b></span>
+              <span>Deposit <b>{{ item.depositAmount | currency:'INR' }}</b></span>
+            </div>
+            <div class="imc-total">Total: <strong>{{ itemLineTotal(item) | currency:'INR' }}</strong></div>
+          </article>
+        }
+      </div>
+
+      @if (items.length) {
+        <div class="items-footer anim-fade-in">
+          <span class="item-count">Total Items: <strong>{{ items.length }}</strong></span>
+          <div class="footer-totals">
+            <div class="ft-box"><span>Items Rent</span><strong>{{ totals.totalRent | currency:'INR' }}</strong></div>
+            @if (extraDays > 0) {
+              <div class="ft-box"><span>Extra ({{ extraDays }}d)</span><strong>{{ totals.extraCharge | currency:'INR' }}</strong></div>
+            }
+            <div class="ft-box"><span>Total Rent</span><strong>{{ totals.rentWithExtra | currency:'INR' }}</strong></div>
+            <div class="ft-box"><span>Deposit</span><strong>{{ totals.totalDeposit | currency:'INR' }}</strong></div>
+            <div class="ft-box grand"><span>Grand Total</span><strong>{{ totals.grandTotal | currency:'INR' }}</strong></div>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+
+  <aside class="sidebar-col anim-card" style="--anim-order: 5">
+    <div class="ui-card payment-summary sidebar-panel">
+      <h4><i class="bi bi-receipt"></i> Payment Summary</h4>
+      <div class="line"><span>Rent Amount</span><strong>{{ totals.totalRent | currency:'INR' }}</strong></div>
+      <div class="line"><span>Discount</span><strong>- {{ totals.discountAmt | currency:'INR' }}</strong></div>
+      <div class="line"><span>Extra Days ({{ extraDays }})</span><strong>{{ totals.extraCharge | currency:'INR' }}</strong></div>
+      <div class="line"><span>Total Rent Amount</span><strong>{{ totals.rentWithExtra | currency:'INR' }}</strong></div>
+      <div class="line"><span>Deposit Amount</span><strong>{{ totals.totalDeposit | currency:'INR' }}</strong></div>
+      <div class="line total"><span>Total Amount</span><strong class="amount-pulse">{{ totals.grandTotal | currency:'INR' }}</strong></div>
+      <div class="split advance"><span>Advance @if (payMode === 'partial') { (50% Rent) }</span><strong>{{ totals.advance | currency:'INR' }}</strong></div>
+      <div class="split delivery"><span>Due at Delivery</span><strong>{{ totals.dueAtDelivery | currency:'INR' }}</strong></div>
+    </div>
+
+    <div class="ui-card booking-pay-card sidebar-panel">
+      <h4>Booking Time Payment</h4>
+      <div class="pay-toggle">
+        <button type="button" [class.active]="payMode === 'partial'" (click)="setPayMode('partial')">50% Advance</button>
+        <button type="button" [class.active]="payMode === 'full'" (click)="setPayMode('full')">Full Rent Pay</button>
+      </div>
+      <label>Amount (manual adjust)</label>
+      <div class="amount-adj">
+        <button type="button" class="adj-btn" (click)="adjustAdvance(-100)">−</button>
+        <input type="number" [(ngModel)]="advanceAmount" [ngModelOptions]="{ standalone: true }" (ngModelChange)="advanceManual = true" />
+        <button type="button" class="adj-btn" (click)="adjustAdvance(100)">+</button>
+      </div>
+      <label>Payment Mode</label>
+      <div class="mode-btns">
+        <button type="button" [class.active]="bookingPaymentMode === 'Cash'" (click)="bookingPaymentMode = 'Cash'"><i class="bi bi-cash"></i> Cash</button>
+        <button type="button" [class.active]="bookingPaymentMode === 'Online'" (click)="bookingPaymentMode = 'Online'"><i class="bi bi-phone"></i> Online</button>
+      </div>
+      <p class="pay-now">Pay now: <strong>{{ totals.bookingPayNow | currency:'INR' }}</strong></p>
+    </div>
+
+    <div class="ui-card flow-card sidebar-panel sidebar-panel-wide">
+      <h4>Payment Flow</h4>
+      <div class="flow-timeline">
+        <div class="flow-step active">
+          <span class="num">1</span>
+          <div>
+            <strong>Booking Time</strong>
+            <p>Pay {{ payMode === 'full' ? 'full rent' : '50% rent (advance)' }}</p>
+            <em>{{ totals.advance | currency:'INR' }} · {{ bookingPaymentMode }}</em>
+          </div>
+        </div>
+        <div class="flow-step">
+          <span class="num">2</span>
+          <div>
+            <strong>Delivery Time</strong>
+            <p>Remaining rent + deposit</p>
+            <em>{{ totals.dueAtDelivery | currency:'INR' }}</em>
+          </div>
+        </div>
+        <div class="flow-step">
+          <span class="num">3</span>
+          <div>
+            <strong>Return Time</strong>
+            <p>Deposit refund to customer</p>
+            <em>{{ totals.totalDeposit | currency:'INR' }}</em>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ui-card status-card sidebar-panel">
+      <h4>Booking Status</h4>
+      <form [formGroup]="bookingForm">
+        <label>Booking Status</label>
+        <select formControlName="bookingStatus">
+          <option>Booked</option>
+          <option>Delivered</option>
+          <option>Cancelled</option>
+        </select>
+        <label>Payment Status</label>
+        <select formControlName="paymentStatus">
+          <option>Partial</option>
+          <option>Paid</option>
+          <option>Pending</option>
+        </select>
+        <label>Notes</label>
+        <textarea formControlName="notes" rows="3"></textarea>
+      </form>
+    </div>
+  </aside>
+</div>
+
+<div class="mobile-save-bar anim-slide-up">
+  <div class="msb-total">
+    <small>Total</small>
+    <strong>{{ totals.grandTotal | currency:'INR' }}</strong>
+  </div>
+  <button type="button" class="btn-primary" (click)="saveBooking()" [disabled]="saving || !items.length">
+    <i class="bi bi-save"></i> {{ saving ? 'Saving...' : 'Save' }}
+  </button>
+</div>

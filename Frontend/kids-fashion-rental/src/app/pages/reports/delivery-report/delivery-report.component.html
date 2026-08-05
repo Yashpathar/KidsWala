@@ -1,0 +1,45 @@
+<div class="page-header flex-between">
+  <div>
+    <h2>Today Delivery Report</h2>
+    <p class="breadcrumb">REPORTS / <strong>Today Delivery</strong></p>
+  </div>
+  <div class="actions no-print">
+    <input type="date" [(ngModel)]="reportDate" (change)="load()" />
+    <button type="button" class="btn-primary" (click)="load()" [disabled]="loading">Refresh</button>
+    <button type="button" class="btn-outline" (click)="print()">Print</button>
+  </div>
+</div>
+
+<div class="ui-card table-card table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Booking No</th>
+        <th>Customer</th>
+        <th>Product</th>
+        <th>Delivery Date</th>
+        <th>Pending</th>
+        <th>Payment</th>
+        <th>Status</th>
+      </tr>
+    </thead>
+    <tbody>
+      @if (loading) {
+        <tr><td colspan="7" class="empty-row">Loading...</td></tr>
+      } @else if (!rows.length) {
+        <tr><td colspan="7" class="empty-row">No deliveries for this date</td></tr>
+      }
+      @for (r of rows; track r.bookingID) {
+        <tr>
+          <td><strong>{{ r.bookingNo }}</strong></td>
+          <td>{{ r.customerName }}</td>
+          <td>{{ r.productName }}</td>
+          <td>{{ r.deliveryDate | date:'dd-MM-yyyy' }}</td>
+          <td>{{ r.pendingAmount | currency:'INR' }}</td>
+          <td>{{ r.paymentStatus }}</td>
+          <td><span class="status-badge" [class]="statusClass(r.deliveryStatus)">{{ r.deliveryStatus }}</span></td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

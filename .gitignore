@@ -21,3 +21,28 @@ rad.json
 *.flf
 #Test results file
 TestResults.xml
+
+# Dependencies & Build artifacts
+node_modules/
+dist/
+tmp/
+.angular/
+coverage/
+
+# .NET / Visual Studio artifacts
+bin/
+obj/
+.vs/
+*.user
+*.userosscache
+*.suo
+
+# Environment & Logs
+*.log
+.env
+.env.local
+
+# OS & Editor files
+.DS_Store
+Thumbs.db
+.idea/

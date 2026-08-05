@@ -1,0 +1,242 @@
+import { Component, OnInit, inject } from '@angular/core';
+import { CurrencyPipe, DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
+import { ApiService } from '../../../core/services/api.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { BookingReturnService } from '../../../core/services/booking-return.service';
+import { computeReturnRefund } from '../../../core/utils/booking-return.util';
+import { normalizeRow, normalizeRows, pickField, pickId } from '../../../core/models/api.models';
+
+export interface ReturnReportRow {
+  bookingID: number;
+  bookingNo: string;
+  customerName: string;
+  productName: string;
+  returnDate: string;
+  depositAmount: number;
+  extraChargePerDay: number;
+  extraDays: number;
+  extraChargeAmount: number;
+  damageDeductionAmount: number;
+  finalRefundAmount: number;
+  finalProfitAmount: number;
+  bookingStatus: string;
+  actualReturnDate?: string;
+}
+
+@Component({
+  selector: 'app-return-report',
+  standalone: true,
+  imports: [CurrencyPipe, DatePipe, FormsModule],
+  templateUrl: './return-report.component.html',
+  styleUrl: './return-report.component.scss'
+})
+export class ReturnReportComponent implements OnInit {
+  private api = inject(ApiService);
+  private auth = inject(AuthService);
+  private returnService = inject(BookingReturnService);
+
+  rows: ReturnReportRow[] = [];
+  reportDate = new Date().toISOString().substring(0, 10);
+  loading = false;
+  message = '';
+  messageType: 'success' | 'error' = 'success';
+
+  returnOpen = false;
+  activeRow: ReturnReportRow | null = null;
+  flowSaving = false;
+  returnDate = '';
+  scheduledReturnDate = '';
+  refundAmount = 0;
+  lateCharge = 0;
+  extraDays = 0;
+  damageDeduction = 0;
+  returnNotes = '';
+  returnIsEarly = false;
+  returnIsLate = false;
+  refundManual = false;
+  returnMode: 'Cash' | 'Online' = 'Cash';
+  returnTxn = '';
+
+  ngOnInit() {
+    this.load();
+    this.returnDate = this.today();
+  }
+
+  get pendingCount(): number {
+    return this.rows.filter(r => this.canProcess(r)).length;
+  }
+
+  get completedCount(): number {
+    return this.rows.filter(r => !this.canProcess(r)).length;
+  }
+
+  get pendingDepositTotal(): number {
+    return this.rows.filter(r => this.canProcess(r)).reduce((s, r) => s + r.depositAmount, 0);
+  }
+
+  load() {
+    this.loading = true;
+    this.api.get<unknown>('/report/today-return', {
+      companyId: this.auth.currentUser()?.companyID,
+      reportDate: this.reportDate
+    }).subscribe({
+      next: r => {
+        this.loading = false;
+        if (r.success) {
+          this.rows = normalizeRows(r.data).map(row => this.mapRow(row));
+        } else {
+          this.rows = [];
+        }
+      },
+      error: () => {
+        this.loading = false;
+        this.rows = [];
+        this.showMsg('Failed to load report', 'error');
+      }
+    });
+  }
+
+  private mapRow(row: Record<string, unknown>): ReturnReportRow {
+    const r = normalizeRow(row);
+    return {
+      bookingID: pickId(r, 'bookingID', 'BookingID'),
+      bookingNo: String(pickField<string>(r, 'bookingNo', 'BookingNo') ?? ''),
+      customerName: String(pickField<string>(r, 'customerName', 'CustomerName') ?? ''),
+      productName: String(pickField<string>(r, 'productName', 'ProductName') ?? ''),
+      returnDate: String(pickField(r, 'returnDate', 'ReturnDate') ?? ''),
+      depositAmount: Number(
+        pickField(r, 'depositAmount', 'DepositAmount', 'lineDepositAmount', 'LineDepositAmount') ?? 0
+      ),
+      extraChargePerDay: Number(pickField(r, 'extraChargePerDay', 'ExtraChargePerDay') ?? 150),
+      extraDays: Number(pickField(r, 'extraDays', 'ExtraDays') ?? 0),
+      extraChargeAmount: Number(pickField(r, 'extraChargeAmount', 'ExtraChargeAmount') ?? 0),
+      damageDeductionAmount: Number(pickField(r, 'damageDeductionAmount', 'DamageDeductionAmount') ?? 0),
+      finalRefundAmount: Number(pickField(r, 'finalRefundAmount', 'FinalRefundAmount') ?? 0),
+      finalProfitAmount: Number(pickField(r, 'finalProfitAmount', 'FinalProfitAmount') ?? 0),
+      bookingStatus: String(pickField<string>(r, 'bookingStatus', 'BookingStatus') ?? ''),
+      actualReturnDate: pickField<string>(r, 'actualReturnDate', 'ActualReturnDate')
+    };
+  }
+
+  canProcess(r: ReturnReportRow) {
+    return r.bookingStatus === 'Delivered';
+  }
+
+  openReturn(r: ReturnReportRow) {
+    this.activeRow = r;
+    this.scheduledReturnDate = r.returnDate.substring(0, 10);
+    this.returnDate = this.today();
+    this.damageDeduction = 0;
+    this.returnNotes = '';
+    this.refundManual = false;
+    this.returnMode = 'Cash';
+    this.returnTxn = '';
+    this.returnOpen = true;
+    this.recalcReturn();
+  }
+
+  onReturnDateChange() {
+    this.recalcReturn();
+  }
+
+  onDamageChange() {
+    this.recalcReturn();
+  }
+
+  recalcReturn() {
+    const r = this.activeRow;
+    if (!r) return;
+    const calc = computeReturnRefund(
+      r.depositAmount,
+      this.scheduledReturnDate,
+      this.returnDate,
+      r.extraChargePerDay,
+      this.damageDeduction
+    );
+    this.lateCharge = calc.lateCharge;
+    this.extraDays = calc.extraDays;
+    this.returnIsEarly = calc.isEarly;
+    this.returnIsLate = calc.isLate;
+    this.damageDeduction = calc.damageDeduction;
+    if (!this.refundManual) {
+      this.refundAmount = calc.refundAmount;
+    }
+  }
+
+  adjustDamage(delta: number) {
+    this.damageDeduction = Math.max(0, this.damageDeduction + delta);
+    this.refundManual = false;
+    this.recalcReturn();
+  }
+
+  adjustRefund(delta: number) {
+    this.refundManual = true;
+    this.refundAmount = Math.max(0, this.refundAmount + delta);
+  }
+
+  closeReturn() {
+    this.returnOpen = false;
+    this.activeRow = null;
+  }
+
+  confirmReturn() {
+    const r = this.activeRow;
+    if (!r) return;
+
+    const notes = this.returnNotes.trim()
+      ? `Return: ${this.returnNotes.trim()}${this.damageDeduction > 0 ? ` | Damage: ₹${this.damageDeduction}` : ''}`
+      : this.damageDeduction > 0
+        ? `Product damage deduction: ₹${this.damageDeduction}`
+        : undefined;
+
+    this.flowSaving = true;
+    this.returnService
+      .processReturn({
+        bookingID: r.bookingID,
+        actualReturnDate: this.returnDate,
+        damageDeductionAmount: this.damageDeduction,
+        returnNotes: notes,
+        refundAmount: this.refundAmount,
+        paymentMode: this.returnMode,
+        transactionNo: this.returnTxn
+      })
+      .subscribe({
+        next: res => {
+          this.flowSaving = false;
+          if (res.success) {
+            this.showMsg(res.message || 'Return processed', 'success');
+            this.closeReturn();
+            this.load();
+          } else {
+            this.showMsg(res.message || 'Failed', 'error');
+          }
+        },
+        error: err => {
+          this.flowSaving = false;
+          this.showMsg(err?.message || 'Return failed', 'error');
+        }
+      });
+  }
+
+  print() {
+    window.print();
+  }
+
+  statusClass(s: string) {
+    return {
+      Delivered: 'delivered',
+      Returned: 'returned',
+      'Late Returned': 'late'
+    }[s] || 'booked';
+  }
+
+  private today() {
+    return new Date().toISOString().substring(0, 10);
+  }
+
+  private showMsg(text: string, type: 'success' | 'error') {
+    this.message = text;
+    this.messageType = type;
+  }
+}

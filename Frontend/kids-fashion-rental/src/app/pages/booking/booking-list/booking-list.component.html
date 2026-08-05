@@ -1,0 +1,222 @@
+<div class="page-header flex-between">
+  <div>
+    <h2>Booking List</h2>
+    <p class="breadcrumb">Manage bookings · delivery & return payments</p>
+  </div>
+  <a routerLink="/booking/add" class="btn-primary"><i class="bi bi-plus-lg"></i> Add Booking</a>
+</div>
+
+@if (message) {
+  <div [class]="messageType === 'success' ? 'alert-success' : 'alert-error'">{{ message }}</div>
+}
+
+<div class="ui-card filters">
+  <i class="bi bi-search"></i>
+  <input [(ngModel)]="search" placeholder="Search booking no or customer..." (keyup.enter)="load()" />
+  <select [(ngModel)]="status" (change)="load()">
+    <option value="">All Status</option>
+    <option>Booked</option>
+    <option>Delivered</option>
+    <option>Returned</option>
+    <option>Late Returned</option>
+    <option>Completed</option>
+  </select>
+  <button type="button" class="btn-primary" (click)="load()"><i class="bi bi-funnel"></i> Filter</button>
+</div>
+
+<!-- Desktop table -->
+<div class="ui-card table-card table-wrap desktop-only">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Booking No</th><th>Customer</th><th>Delivery</th><th>Return</th>
+        <th class="money">Rent</th><th class="money">Deposit</th><th class="money">Total</th>
+        <th class="money">Advance</th><th class="money">Due</th><th>Status</th><th>Payment</th><th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      @if (loading) {
+        <tr><td colspan="12" class="empty-row">Loading...</td></tr>
+      } @else if (!bookings.length) {
+        <tr><td colspan="12" class="empty-row">No bookings found</td></tr>
+      }
+      @for (b of bookings; track b.bookingID) {
+        <tr>
+          <td><strong>{{ b.bookingNo }}</strong></td>
+          <td>{{ b.customerName }}</td>
+          <td>{{ b.deliveryDate | date:'dd-MM-yyyy' }}</td>
+          <td>{{ b.returnDate | date:'dd-MM-yyyy' }}</td>
+          <td class="money">{{ b.totalRentAmount | currency:'INR' }}</td>
+          <td class="money">{{ b.depositAmount | currency:'INR' }}</td>
+          <td class="money"><strong>{{ b.totalAmount | currency:'INR' }}</strong></td>
+          <td class="money">{{ b.advanceAmount | currency:'INR' }}</td>
+          <td class="money">{{ b.remainingAmount | currency:'INR' }}</td>
+          <td><span class="status-badge" [class]="statusClass(b.bookingStatus)">{{ b.bookingStatus }}</span></td>
+          <td><span class="status-badge partial">{{ b.paymentStatus }}</span></td>
+          <td class="actions">
+            @if (canDeliver(b)) {
+              <button type="button" class="btn-flow delivery" (click)="openDelivery(b)" title="Delivery">
+                <i class="bi bi-truck"></i>
+              </button>
+            }
+            @if (canReturn(b)) {
+              <button type="button" class="btn-flow return" (click)="openReturn(b)" title="Return">
+                <i class="bi bi-arrow-return-left"></i>
+              </button>
+            }
+            <a [routerLink]="['/invoice', b.bookingID]" class="btn-icon-action" title="Invoice"><i class="bi bi-receipt"></i></a>
+            <button type="button" class="btn-icon-action danger" (click)="delete(b)" [disabled]="loading" title="Delete">
+              <i class="bi bi-trash"></i>
+            </button>
+          </td>
+        </tr>
+      }
+    </tbody>
+    @if (bookings.length) {
+      <tfoot>
+        <tr class="table-footer">
+          <td colspan="4"><strong>Page Totals</strong></td>
+          <td class="money"><strong>{{ footerTotals.rent | currency:'INR' }}</strong></td>
+          <td class="money"><strong>{{ footerTotals.deposit | currency:'INR' }}</strong></td>
+          <td class="money"><strong>{{ footerTotals.total | currency:'INR' }}</strong></td>
+          <td class="money"><strong>{{ footerTotals.advance | currency:'INR' }}</strong></td>
+          <td class="money"><strong>{{ footerTotals.due | currency:'INR' }}</strong></td>
+          <td colspan="3"></td>
+        </tr>
+      </tfoot>
+    }
+  </table>
+</div>
+
+<!-- Mobile cards -->
+<div class="mobile-cards mobile-only">
+  @for (b of bookings; track b.bookingID) {
+    <div class="ui-card booking-card">
+      <div class="card-top">
+        <strong>{{ b.bookingNo }}</strong>
+        <span class="status-badge" [class]="statusClass(b.bookingStatus)">{{ b.bookingStatus }}</span>
+      </div>
+      <p>{{ b.customerName }}</p>
+      <div class="card-meta">
+        <span>Total {{ b.totalAmount | currency:'INR' }}</span>
+        <span>Due {{ b.remainingAmount | currency:'INR' }}</span>
+      </div>
+      <div class="card-actions">
+        @if (canDeliver(b)) {
+          <button type="button" class="btn-flow delivery" (click)="openDelivery(b)"><i class="bi bi-truck"></i> Delivery</button>
+        }
+        @if (canReturn(b)) {
+          <button type="button" class="btn-flow return" (click)="openReturn(b)"><i class="bi bi-arrow-return-left"></i> Return</button>
+        }
+        <a [routerLink]="['/invoice', b.bookingID]" class="btn-outline btn-sm">Invoice</a>
+      </div>
+    </div>
+  }
+</div>
+
+@if (deliveryOpen && activeBooking) {
+  <div class="app-modal-backdrop" (click)="closeModals()">
+    <div class="app-modal-panel ui-card flow-modal" (click)="$event.stopPropagation()">
+      <h3><i class="bi bi-truck"></i> Delivery Payment</h3>
+      <p class="sub">{{ activeBooking.bookingNo }} · {{ activeBooking.customerName }}</p>
+
+      <div class="flow-breakdown">
+        <div class="fb-row"><span>Remaining Rent</span><strong>{{ deliveryRentPart | currency:'INR' }}</strong></div>
+        <div class="fb-row"><span>+ Deposit</span><strong>{{ deliveryDepositPart | currency:'INR' }}</strong></div>
+        <div class="fb-row total"><span>Collect at Delivery</span><strong>{{ deliveryAmount | currency:'INR' }}</strong></div>
+      </div>
+
+      <label>Amount (adjust +/−)</label>
+      <div class="amount-adj">
+        <button type="button" class="adj-btn" (click)="adjustDelivery(-100)">−</button>
+        <input type="number" [(ngModel)]="deliveryAmount" />
+        <button type="button" class="adj-btn" (click)="adjustDelivery(100)">+</button>
+      </div>
+
+      <label>Payment Mode</label>
+      <div class="mode-btns">
+        <button type="button" [class.active]="deliveryMode === 'Cash'" (click)="deliveryMode = 'Cash'"><i class="bi bi-cash"></i> Cash</button>
+        <button type="button" [class.active]="deliveryMode === 'Online'" (click)="deliveryMode = 'Online'"><i class="bi bi-phone"></i> Online</button>
+      </div>
+
+      @if (deliveryMode === 'Online') {
+        <label>Transaction No.</label>
+        <input [(ngModel)]="deliveryTxn" placeholder="UPI / ref no." />
+      }
+
+      <div class="modal-actions">
+        <button type="button" class="btn-outline" (click)="closeModals()">Cancel</button>
+        <button type="button" class="btn-primary" (click)="confirmDelivery()" [disabled]="flowSaving">
+          {{ flowSaving ? 'Saving...' : 'Confirm Delivery' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+@if (returnOpen && activeBooking) {
+  <div class="app-modal-backdrop" (click)="closeModals()">
+    <div class="app-modal-panel ui-card flow-modal flow-modal-lg" (click)="$event.stopPropagation()">
+      <h3><i class="bi bi-arrow-return-left"></i> Return & Deposit Refund</h3>
+      <p class="sub">{{ activeBooking.bookingNo }} · {{ activeBooking.customerName }}</p>
+
+      <div class="return-hints">
+        <span class="hint">Scheduled return: <strong>{{ scheduledReturnDate | date:'dd-MM-yyyy' }}</strong></span>
+        @if (returnIsEarly) {
+          <span class="badge-early"><i class="bi bi-calendar-check"></i> Early return — no late fee</span>
+        }
+        @if (returnIsLate) {
+          <span class="badge-late"><i class="bi bi-exclamation-triangle"></i> Late {{ extraDays }} day(s)</span>
+        }
+      </div>
+
+      <label>Actual Return Date <small>(can be before scheduled date)</small></label>
+      <input type="date" [(ngModel)]="returnDate" (ngModelChange)="onReturnDateChange()" />
+
+      <div class="flow-breakdown">
+        <div class="fb-row"><span>Deposit Held</span><strong>{{ activeBooking.depositAmount | currency:'INR' }}</strong></div>
+        @if (lateCharge > 0) {
+          <div class="fb-row warn"><span>Late charge ({{ extraDays }} days)</span><strong>- {{ lateCharge | currency:'INR' }}</strong></div>
+        }
+        @if (damageDeduction > 0) {
+          <div class="fb-row warn"><span>Product problem / damage cut</span><strong>- {{ damageDeduction | currency:'INR' }}</strong></div>
+        }
+        <div class="fb-row total"><span>Refund to Customer</span><strong>{{ refundAmount | currency:'INR' }}</strong></div>
+      </div>
+
+      <label>Damage / problem amount (cut from deposit)</label>
+      <div class="amount-adj">
+        <button type="button" class="adj-btn" (click)="adjustDamage(-100)">−</button>
+        <input type="number" [(ngModel)]="damageDeduction" (ngModelChange)="onDamageChange()" min="0" />
+        <button type="button" class="adj-btn" (click)="adjustDamage(100)">+</button>
+      </div>
+      <label>Problem notes (stain, tear, missing button…)</label>
+      <textarea [(ngModel)]="returnNotes" rows="2" placeholder="Describe product issue"></textarea>
+
+      <label>Refund amount (adjust +/−)</label>
+      <div class="amount-adj">
+        <button type="button" class="adj-btn" (click)="adjustRefund(-100)">−</button>
+        <input type="number" [(ngModel)]="refundAmount" />
+        <button type="button" class="adj-btn" (click)="adjustRefund(100)">+</button>
+      </div>
+
+      <label>Refund Mode</label>
+      <div class="mode-btns">
+        <button type="button" [class.active]="returnMode === 'Cash'" (click)="returnMode = 'Cash'"><i class="bi bi-cash"></i> Cash</button>
+        <button type="button" [class.active]="returnMode === 'Online'" (click)="returnMode = 'Online'"><i class="bi bi-phone"></i> Online</button>
+      </div>
+
+      @if (returnMode === 'Online') {
+        <label>Transaction No.</label>
+        <input [(ngModel)]="returnTxn" placeholder="Refund ref no." />
+      }
+
+      <div class="modal-actions">
+        <button type="button" class="btn-outline" (click)="closeModals()">Cancel</button>
+        <button type="button" class="btn-primary" (click)="confirmReturn()" [disabled]="flowSaving">
+          {{ flowSaving ? 'Processing...' : 'Confirm Return' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

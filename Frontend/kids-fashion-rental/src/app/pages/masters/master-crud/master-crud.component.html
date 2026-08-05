@@ -1,0 +1,96 @@
+@if (!config) {
+  <div class="alert-error">Master page configuration is missing.</div>
+} @else {
+<div class="page-header flex-between">
+  <div>
+    <h2>{{ config.title }}</h2>
+    <p class="breadcrumb">MASTERS / <strong>{{ config.title }}</strong></p>
+  </div>
+  <button type="button" class="btn-primary" (click)="openAdd()" [disabled]="loading">
+    <i class="bi bi-plus-lg"></i> Add New
+  </button>
+</div>
+
+@if (message) {
+  <div [class]="messageType === 'success' ? 'alert-success' : 'alert-error'">{{ message }}</div>
+}
+
+@if (loading && !rows.length) {
+  <div class="glass-card loading-box">Loading...</div>
+}
+
+<div class="ui-card filters">
+  <i class="bi bi-search"></i>
+  <input [(ngModel)]="search" placeholder="Search..." />
+</div>
+
+<div class="ui-card table-card table-wrap">
+  <table class="data-table">
+    <thead>
+      <tr>
+        @for (col of config.columns; track col.key) {
+          <th>{{ col.label }}</th>
+        }
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      @if (!filteredRows.length && !loading) {
+        <tr><td [attr.colspan]="config.columns.length + 1" class="empty-row">No records found</td></tr>
+      }
+      @for (row of filteredRows; track trackRow($index, row)) {
+        <tr class="row-hover">
+          @for (col of config.columns; track col.key) {
+            <td>
+              @if (col.key === 'colorCode' && row[col.key]) {
+                <span class="color-swatch" [style.background]="row[col.key]"></span>
+              }
+              @if (col.key === 'isActive') {
+                {{ row[col.key] ? 'Yes' : 'No' }}
+              } @else {
+                {{ row[col.key] }}
+              }
+            </td>
+          }
+          <td class="actions">
+            <button type="button" class="btn-sm" (click)="openEdit(row, true)">View</button>
+            <button type="button" class="btn-sm" (click)="openEdit(row)">Edit</button>
+            <button type="button" class="btn-sm danger" (click)="confirmDelete(row)">Delete</button>
+          </td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>
+
+@if (showModal) {
+  <div class="app-modal-backdrop" (click)="closeModal()">
+    <div class="app-modal-panel ui-card slide-up" (click)="$event.stopPropagation()">
+      <h3>{{ modalTitle }}</h3>
+      @for (field of config.fields; track field.key) {
+        <label>{{ field.label }}</label>
+        @if (field.type === 'textarea') {
+          <textarea [(ngModel)]="form[field.key]" [disabled]="viewMode" rows="3"></textarea>
+        } @else if (field.type === 'number') {
+          <input type="number" [(ngModel)]="form[field.key]" [disabled]="viewMode" />
+        } @else if (field.type === 'checkbox') {
+          <div class="checkbox-row">
+            <input type="checkbox" [(ngModel)]="form[field.key]" [disabled]="viewMode" />
+            <span>Active</span>
+          </div>
+        } @else {
+          <input [(ngModel)]="form[field.key]" [disabled]="viewMode" />
+        }
+      }
+      <div class="modal-actions">
+        <button type="button" class="btn-outline" (click)="closeModal()" [disabled]="saving">Close</button>
+        @if (!viewMode) {
+          <button type="button" class="btn-primary" (click)="save()" [disabled]="saving">
+            {{ saving ? 'Saving...' : 'Save' }}
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+}
+}

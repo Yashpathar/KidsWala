@@ -1,0 +1,261 @@
+<div class="return-report-page">
+  <div class="page-header flex-between">
+    <div>
+      <h2>Today Return Report</h2>
+      <p class="breadcrumb">REPORTS / <strong>Today Return</strong></p>
+    </div>
+    <div class="toolbar no-print">
+      <div class="date-field">
+        <i class="bi bi-calendar3"></i>
+        <input type="date" [(ngModel)]="reportDate" (change)="load()" />
+      </div>
+      <button type="button" class="btn-primary" (click)="load()" [disabled]="loading">
+        <i class="bi bi-arrow-clockwise" [class.spin]="loading"></i> Refresh
+      </button>
+      <button type="button" class="btn-outline" (click)="print()">
+        <i class="bi bi-printer"></i> Print
+      </button>
+    </div>
+  </div>
+
+  @if (message) {
+    <div class="alert-banner" [class.success]="messageType === 'success'" [class.error]="messageType === 'error'">
+      <i class="bi" [class.bi-check-circle-fill]="messageType === 'success'" [class.bi-exclamation-circle-fill]="messageType === 'error'"></i>
+      {{ message }}
+    </div>
+  }
+
+  <div class="kpi-row no-print">
+    <div class="kpi-card">
+      <div class="kpi-icon pending"><i class="bi bi-hourglass-split"></i></div>
+      <div>
+        <span class="kpi-label">Pending Returns</span>
+        <strong class="kpi-value">{{ pendingCount }}</strong>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon done"><i class="bi bi-check2-circle"></i></div>
+      <div>
+        <span class="kpi-label">Completed</span>
+        <strong class="kpi-value">{{ completedCount }}</strong>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-icon deposit"><i class="bi bi-wallet2"></i></div>
+      <div>
+        <span class="kpi-label">Deposit to Refund</span>
+        <strong class="kpi-value">{{ pendingDepositTotal | currency:'INR':'symbol':'1.0-0' }}</strong>
+      </div>
+    </div>
+  </div>
+
+  <div class="info-cards no-print">
+    <div class="info-card">
+      <i class="bi bi-calendar-check"></i>
+      <div>
+        <strong>Early return</strong>
+        <p>Return before scheduled date — no late fee</p>
+      </div>
+    </div>
+    <div class="info-card">
+      <i class="bi bi-clock-history"></i>
+      <div>
+        <strong>Late return</strong>
+        <p>Extra days charged from deposit automatically</p>
+      </div>
+    </div>
+    <div class="info-card">
+      <i class="bi bi-shield-exclamation"></i>
+      <div>
+        <strong>Product problem</strong>
+        <p>Damage amount cut from deposit at return</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="ui-card table-card table-wrap desktop-table">
+    <div class="table-top no-print">
+      <h3><i class="bi bi-list-check"></i> Returns for {{ reportDate | date:'dd MMM yyyy' }}</h3>
+      <span class="count-pill">{{ rows.length }} booking(s)</span>
+    </div>
+
+    <table class="data-table">
+      <thead>
+        <tr>
+          <th>Booking No</th>
+          <th>Customer</th>
+          <th>Product</th>
+          <th>Return Date</th>
+          <th>Deposit</th>
+          <th>Status</th>
+          <th class="num">Extra Days</th>
+          <th class="money">Late Charge</th>
+          <th class="money">Damage Cut</th>
+          <th class="money">Refund</th>
+          <th class="money">Profit</th>
+          <th class="action no-print">Action</th>
+        </tr>
+      </thead>
+      <tbody>
+        @if (loading) {
+          <tr><td colspan="12" class="empty-row"><i class="bi bi-arrow-repeat spin"></i> Loading...</td></tr>
+        } @else if (!rows.length) {
+          <tr>
+            <td colspan="12" class="empty-row">
+              <i class="bi bi-inbox"></i>
+              <p>No returns scheduled for this date</p>
+            </td>
+          </tr>
+        }
+        @for (r of rows; track r.bookingID) {
+          <tr [class.row-pending]="canProcess(r)">
+            <td><span class="booking-code">{{ r.bookingNo }}</span></td>
+            <td>
+              <span class="customer-name">{{ r.customerName }}</span>
+            </td>
+            <td><span class="product-name">{{ r.productName }}</span></td>
+            <td>{{ r.returnDate | date:'dd-MM-yyyy' }}</td>
+            <td class="money"><strong>{{ r.depositAmount | currency:'INR' }}</strong></td>
+            <td><span class="status-badge" [class]="statusClass(r.bookingStatus)">{{ r.bookingStatus }}</span></td>
+            <td class="num">{{ r.extraDays || 0 }}</td>
+            <td class="money" [class.text-danger]="r.extraChargeAmount > 0">{{ r.extraChargeAmount | currency:'INR' }}</td>
+            <td class="money" [class.text-danger]="r.damageDeductionAmount > 0">{{ r.damageDeductionAmount | currency:'INR' }}</td>
+            <td class="money text-success"><strong>{{ r.finalRefundAmount | currency:'INR' }}</strong></td>
+            <td class="money">{{ r.finalProfitAmount | currency:'INR' }}</td>
+            <td class="action no-print">
+              @if (canProcess(r)) {
+                <button type="button" class="btn-process-return" (click)="openReturn(r)">
+                  <i class="bi bi-arrow-return-left"></i>
+                  <span>Process Return</span>
+                </button>
+              } @else {
+                <span class="status-done"><i class="bi bi-check-lg"></i> Completed</span>
+              }
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Mobile cards -->
+  <div class="mobile-list no-print">
+    @if (!loading && !rows.length) {
+      <div class="ui-card empty-card">
+        <i class="bi bi-inbox"></i>
+        <p>No returns for this date</p>
+      </div>
+    }
+    @for (r of rows; track r.bookingID) {
+      <div class="ui-card return-card" [class.pending]="canProcess(r)">
+        <div class="card-head">
+          <span class="booking-code">{{ r.bookingNo }}</span>
+          <span class="status-badge" [class]="statusClass(r.bookingStatus)">{{ r.bookingStatus }}</span>
+        </div>
+        <p class="card-customer">{{ r.customerName }}</p>
+        <p class="card-product"><i class="bi bi-bag"></i> {{ r.productName }}</p>
+        <div class="card-grid">
+          <div><span>Return</span><strong>{{ r.returnDate | date:'dd-MM-yyyy' }}</strong></div>
+          <div><span>Deposit</span><strong>{{ r.depositAmount | currency:'INR' }}</strong></div>
+          <div><span>Refund</span><strong class="text-success">{{ r.finalRefundAmount | currency:'INR' }}</strong></div>
+        </div>
+        @if (canProcess(r)) {
+          <button type="button" class="btn-process-return full" (click)="openReturn(r)">
+            <i class="bi bi-arrow-return-left"></i> Process Return
+          </button>
+        }
+      </div>
+    }
+  </div>
+</div>
+
+@if (returnOpen && activeRow) {
+  <div class="app-modal-backdrop" (click)="closeReturn()">
+    <div class="app-modal-panel return-modal ui-card" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <div>
+          <h3><i class="bi bi-arrow-return-left"></i> Process Return</h3>
+          <p>{{ activeRow.bookingNo }} · {{ activeRow.customerName }}</p>
+        </div>
+        <button type="button" class="btn-close-modal" (click)="closeReturn()" aria-label="Close">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      <div class="product-chip">
+        <i class="bi bi-bag-check"></i>
+        <span>{{ activeRow.productName }}</span>
+        <em>Deposit {{ activeRow.depositAmount | currency:'INR' }}</em>
+      </div>
+
+      <div class="return-hints">
+        <span class="hint-pill"><i class="bi bi-calendar-event"></i> Scheduled {{ scheduledReturnDate | date:'dd-MM-yyyy' }}</span>
+        @if (returnIsEarly) {
+          <span class="badge-early"><i class="bi bi-calendar-check"></i> Early return</span>
+        }
+        @if (returnIsLate) {
+          <span class="badge-late"><i class="bi bi-exclamation-triangle"></i> Late {{ extraDays }} day(s)</span>
+        }
+      </div>
+
+      <div class="modal-grid">
+        <div class="modal-col">
+          <label>Actual Return Date</label>
+          <input type="date" class="field" [(ngModel)]="returnDate" (ngModelChange)="onReturnDateChange()" />
+
+          <label>Problem notes</label>
+          <textarea class="field" [(ngModel)]="returnNotes" rows="3" placeholder="Stain, tear, missing button…"></textarea>
+
+          <label>Refund mode</label>
+          <div class="mode-btns">
+            <button type="button" [class.active]="returnMode === 'Cash'" (click)="returnMode = 'Cash'">
+              <i class="bi bi-cash-stack"></i> Cash
+            </button>
+            <button type="button" [class.active]="returnMode === 'Online'" (click)="returnMode = 'Online'">
+              <i class="bi bi-phone"></i> Online
+            </button>
+          </div>
+          @if (returnMode === 'Online') {
+            <label>Transaction No.</label>
+            <input class="field" [(ngModel)]="returnTxn" placeholder="UPI / bank ref" />
+          }
+        </div>
+
+        <div class="modal-col summary-col">
+          <div class="flow-breakdown">
+            <div class="fb-row"><span>Deposit held</span><strong>{{ activeRow.depositAmount | currency:'INR' }}</strong></div>
+            @if (lateCharge > 0) {
+              <div class="fb-row warn"><span>Late charge</span><strong>- {{ lateCharge | currency:'INR' }}</strong></div>
+            }
+            @if (damageDeduction > 0) {
+              <div class="fb-row warn"><span>Damage cut</span><strong>- {{ damageDeduction | currency:'INR' }}</strong></div>
+            }
+            <div class="fb-row total"><span>Refund to customer</span><strong>{{ refundAmount | currency:'INR' }}</strong></div>
+          </div>
+
+          <label>Damage / problem (from deposit)</label>
+          <div class="amount-adj">
+            <button type="button" class="adj-btn" (click)="adjustDamage(-100)">−</button>
+            <input type="number" [(ngModel)]="damageDeduction" (ngModelChange)="onDamageChange()" min="0" />
+            <button type="button" class="adj-btn" (click)="adjustDamage(100)">+</button>
+          </div>
+
+          <label>Refund amount</label>
+          <div class="amount-adj">
+            <button type="button" class="adj-btn" (click)="adjustRefund(-100)">−</button>
+            <input type="number" [(ngModel)]="refundAmount" />
+            <button type="button" class="adj-btn" (click)="adjustRefund(100)">+</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button type="button" class="btn-outline" (click)="closeReturn()">Cancel</button>
+        <button type="button" class="btn-primary" (click)="confirmReturn()" [disabled]="flowSaving">
+          <i class="bi bi-check2-circle"></i>
+          {{ flowSaving ? 'Processing...' : 'Confirm Return & Refund' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}

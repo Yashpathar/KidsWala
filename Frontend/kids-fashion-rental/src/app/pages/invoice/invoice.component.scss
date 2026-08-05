@@ -1,0 +1,27 @@
+.invoice-actions { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
+.invoice { padding: 2rem; max-width: 900px; margin: 0 auto 2rem; }
+.invoice-header { display: flex; justify-content: space-between; border-bottom: 2px solid var(--primary); padding-bottom: 1rem; margin-bottom: 1.5rem;
+  h1 { margin: 0; color: var(--primary); font-size: 1.5rem; }
+  h2 { margin: 0; color: var(--text-muted); }
+}
+.invoice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;
+  h4 { margin: 0 0 0.5rem; color: var(--primary); }
+  p { margin: 0.2rem 0; }
+}
+.invoice-totals {
+  margin-top: 1.5rem;
+  max-width: 360px;
+  margin-left: auto;
+  div { display: flex; justify-content: space-between; padding: 0.35rem 0; }
+  .extra { color: #ef4444; }
+  .grand { border-top: 2px solid var(--primary); margin-top: 0.5rem; padding-top: 0.5rem; strong { color: var(--primary); font-size: 1.2rem; } }
+}
+.signature { margin-top: 3rem; text-align: right;
+  .sign-line { width: 200px; border-top: 1px solid #333; margin: 2rem 0 0 auto; }
+}
+.whatsapp-panel { max-width: 900px; margin: 0 auto; padding: 1.25rem;
+  label { display: block; font-weight: 600; margin: 0.5rem 0 0.25rem; }
+  input, textarea { width: 100%; border: 1px solid #ece8ff; border-radius: 10px; padding: 0.5rem; }
+  button { margin-top: 1rem; }
+}
+@media print { .no-print { display: none !important; } .invoice { box-shadow: none; } }
