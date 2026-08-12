@@ -126,29 +126,60 @@ GO
 
 CREATE OR ALTER PROCEDURE SP_InsertCategory
     @CompanyID INT, @CategoryName VARCHAR(100), @Description NVARCHAR(500)=NULL, @CreatedBy INT=NULL
-AS BEGIN TRY
-    INSERT INTO tblCategory(CompanyID, CategoryName, Description, CreatedBy)
-    VALUES(@CompanyID, @CategoryName, @Description, @CreatedBy);
-    SELECT 1 AS Success, 'Category added' AS Message, SCOPE_IDENTITY() AS ID;
-END TRY BEGIN CATCH
-    SELECT 0 AS Success, ERROR_MESSAGE() AS Message, 0 AS ID;
-END CATCH END
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        INSERT INTO tblCategory(CompanyID, CategoryName, Description, CreatedBy)
+        VALUES(@CompanyID, @CategoryName, @Description, @CreatedBy);
+        SELECT 1 AS Success, 'Category added' AS Message, SCOPE_IDENTITY() AS ID;
+    END TRY
+    BEGIN CATCH
+        SELECT 0 AS Success, ERROR_MESSAGE() AS Message, 0 AS ID;
+    END CATCH
+END
 GO
 
 CREATE OR ALTER PROCEDURE SP_UpdateCategory
     @CategoryID INT, @CategoryName VARCHAR(100), @Description NVARCHAR(500)=NULL, @IsActive BIT=1, @ModifiedBy INT=NULL
-AS BEGIN TRY
-    UPDATE tblCategory SET CategoryName=@CategoryName, Description=@Description, IsActive=@IsActive,
-        ModifiedDate=GETDATE(), ModifiedBy=@ModifiedBy WHERE CategoryID=@CategoryID;
-    SELECT 1 AS Success, 'Category updated' AS Message, @CategoryID AS ID;
-END TRY BEGIN CATCH SELECT 0 AS Success, ERROR_MESSAGE() AS Message, 0 AS ID; END CATCH END
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        UPDATE tblCategory SET CategoryName=@CategoryName, Description=@Description, IsActive=@IsActive,
+            ModifiedDate=GETDATE(), ModifiedBy=@ModifiedBy WHERE CategoryID=@CategoryID;
+        SELECT 1 AS Success, 'Category updated' AS Message, @CategoryID AS ID;
+    END TRY
+    BEGIN CATCH
+        SELECT 0 AS Success, ERROR_MESSAGE() AS Message, 0 AS ID;
+    END CATCH
+END
 GO
 
 CREATE OR ALTER PROCEDURE SP_DeleteCategory @CategoryID INT, @ModifiedBy INT=NULL
-AS BEGIN TRY
-    UPDATE tblCategory SET IsDeleted=1, ModifiedDate=GETDATE(), ModifiedBy=@ModifiedBy WHERE CategoryID=@CategoryID;
-    SELECT 1 AS Success, 'Category deleted' AS Message, @CategoryID AS ID;
-END TRY BEGIN CATCH SELECT 0 AS Success, ERROR_MESSAGE() AS Message, 0 AS ID; END CATCH END
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        IF EXISTS (
+            SELECT 1 FROM tblProducts P
+            WHERE P.IsDeleted = 0 AND (
+                P.CategoryID = @CategoryID OR
+                P.CategoryName = (SELECT CategoryName FROM tblCategory WHERE CategoryID = @CategoryID)
+            )
+        )
+        BEGIN
+            SELECT 0 AS Success, 'Cannot delete category: It is currently assigned to 1 or more active products. Please reassign or remove products first.' AS Message, 0 AS ID;
+            RETURN;
+        END
+
+        UPDATE tblCategory SET IsDeleted=1, ModifiedDate=GETDATE(), ModifiedBy=@ModifiedBy WHERE CategoryID=@CategoryID;
+        SELECT 1 AS Success, 'Category deleted' AS Message, @CategoryID AS ID;
+    END TRY
+    BEGIN CATCH
+        SELECT 0 AS Success, ERROR_MESSAGE() AS Message, 0 AS ID;
+    END CATCH
+END
 GO
 
 /***************************************************************
@@ -168,27 +199,60 @@ GO
 
 CREATE OR ALTER PROCEDURE SP_InsertSize
     @CompanyID INT, @SizeName VARCHAR(50), @SizeCode VARCHAR(20)=NULL, @SortOrder INT=0, @CreatedBy INT=NULL
-AS BEGIN TRY
-    INSERT INTO tblSize(CompanyID, SizeName, SizeCode, SortOrder, CreatedBy)
-    VALUES(@CompanyID, @SizeName, @SizeCode, @SortOrder, @CreatedBy);
-    SELECT 1 AS Success, 'Size added' AS Message, SCOPE_IDENTITY() AS ID;
-END TRY BEGIN CATCH SELECT 0 AS Success, ERROR_MESSAGE() AS Message, 0 AS ID; END CATCH END
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        INSERT INTO tblSize(CompanyID, SizeName, SizeCode, SortOrder, CreatedBy)
+        VALUES(@CompanyID, @SizeName, @SizeCode, @SortOrder, @CreatedBy);
+        SELECT 1 AS Success, 'Size added' AS Message, SCOPE_IDENTITY() AS ID;
+    END TRY
+    BEGIN CATCH
+        SELECT 0 AS Success, ERROR_MESSAGE() AS Message, 0 AS ID;
+    END CATCH
+END
 GO
 
 CREATE OR ALTER PROCEDURE SP_UpdateSize
     @SizeID INT, @SizeName VARCHAR(50), @SizeCode VARCHAR(20)=NULL, @SortOrder INT=0, @IsActive BIT=1, @ModifiedBy INT=NULL
-AS BEGIN TRY
-    UPDATE tblSize SET SizeName=@SizeName, SizeCode=@SizeCode, SortOrder=@SortOrder, IsActive=@IsActive,
-        ModifiedDate=GETDATE(), ModifiedBy=@ModifiedBy WHERE SizeID=@SizeID;
-    SELECT 1 AS Success, 'Size updated' AS Message, @SizeID AS ID;
-END TRY BEGIN CATCH SELECT 0 AS Success, ERROR_MESSAGE() AS Message, 0 AS ID; END CATCH END
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        UPDATE tblSize SET SizeName=@SizeName, SizeCode=@SizeCode, SortOrder=@SortOrder, IsActive=@IsActive,
+            ModifiedDate=GETDATE(), ModifiedBy=@ModifiedBy WHERE SizeID=@SizeID;
+        SELECT 1 AS Success, 'Size updated' AS Message, @SizeID AS ID;
+    END TRY
+    BEGIN CATCH
+        SELECT 0 AS Success, ERROR_MESSAGE() AS Message, 0 AS ID;
+    END CATCH
+END
 GO
 
 CREATE OR ALTER PROCEDURE SP_DeleteSize @SizeID INT, @ModifiedBy INT=NULL
-AS BEGIN TRY
-    UPDATE tblSize SET IsDeleted=1, ModifiedDate=GETDATE(), ModifiedBy=@ModifiedBy WHERE SizeID=@SizeID;
-    SELECT 1 AS Success, 'Size deleted' AS Message, @SizeID AS ID;
-END TRY BEGIN CATCH SELECT 0 AS Success, ERROR_MESSAGE() AS Message, 0 AS ID; END CATCH END
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        IF EXISTS (
+            SELECT 1 FROM tblProducts P
+            WHERE P.IsDeleted = 0 AND (
+                P.SizeID = @SizeID OR
+                P.Size = (SELECT SizeName FROM tblSize WHERE SizeID = @SizeID)
+            )
+        )
+        BEGIN
+            SELECT 0 AS Success, 'Cannot delete size: It is currently assigned to 1 or more active products. Please reassign or remove products first.' AS Message, 0 AS ID;
+            RETURN;
+        END
+
+        UPDATE tblSize SET IsDeleted=1, ModifiedDate=GETDATE(), ModifiedBy=@ModifiedBy WHERE SizeID=@SizeID;
+        SELECT 1 AS Success, 'Size deleted' AS Message, @SizeID AS ID;
+    END TRY
+    BEGIN CATCH
+        SELECT 0 AS Success, ERROR_MESSAGE() AS Message, 0 AS ID;
+    END CATCH
+END
 GO
 
 /***************************************************************
@@ -208,44 +272,83 @@ GO
 
 CREATE OR ALTER PROCEDURE SP_InsertColor
     @CompanyID INT, @ColorName VARCHAR(100), @ColorCode VARCHAR(20)=NULL, @CreatedBy INT=NULL
-AS BEGIN TRY
-    INSERT INTO tblColor(CompanyID, ColorName, ColorCode, CreatedBy)
-    VALUES(@CompanyID, @ColorName, @ColorCode, @CreatedBy);
-    SELECT 1 AS Success, 'Color added' AS Message, SCOPE_IDENTITY() AS ID;
-END TRY BEGIN CATCH SELECT 0 AS Success, ERROR_MESSAGE() AS Message, 0 AS ID; END CATCH END
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        INSERT INTO tblColor(CompanyID, ColorName, ColorCode, CreatedBy)
+        VALUES(@CompanyID, @ColorName, @ColorCode, @CreatedBy);
+        SELECT 1 AS Success, 'Color added' AS Message, SCOPE_IDENTITY() AS ID;
+    END TRY
+    BEGIN CATCH
+        SELECT 0 AS Success, ERROR_MESSAGE() AS Message, 0 AS ID;
+    END CATCH
+END
 GO
 
 CREATE OR ALTER PROCEDURE SP_UpdateColor
     @ColorID INT, @ColorName VARCHAR(100), @ColorCode VARCHAR(20)=NULL, @IsActive BIT=1, @ModifiedBy INT=NULL
-AS BEGIN TRY
-    UPDATE tblColor SET ColorName=@ColorName, ColorCode=@ColorCode, IsActive=@IsActive,
-        ModifiedDate=GETDATE(), ModifiedBy=@ModifiedBy WHERE ColorID=@ColorID;
-    SELECT 1 AS Success, 'Color updated' AS Message, @ColorID AS ID;
-END TRY BEGIN CATCH SELECT 0 AS Success, ERROR_MESSAGE() AS Message, 0 AS ID; END CATCH END
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        UPDATE tblColor SET ColorName=@ColorName, ColorCode=@ColorCode, IsActive=@IsActive,
+            ModifiedDate=GETDATE(), ModifiedBy=@ModifiedBy WHERE ColorID=@ColorID;
+        SELECT 1 AS Success, 'Color updated' AS Message, @ColorID AS ID;
+    END TRY
+    BEGIN CATCH
+        SELECT 0 AS Success, ERROR_MESSAGE() AS Message, 0 AS ID;
+    END CATCH
+END
 GO
 
 CREATE OR ALTER PROCEDURE SP_DeleteColor @ColorID INT, @ModifiedBy INT=NULL
-AS BEGIN TRY
-    UPDATE tblColor SET IsDeleted=1, ModifiedDate=GETDATE(), ModifiedBy=@ModifiedBy WHERE ColorID=@ColorID;
-    SELECT 1 AS Success, 'Color deleted' AS Message, @ColorID AS ID;
-END TRY BEGIN CATCH SELECT 0 AS Success, ERROR_MESSAGE() AS Message, 0 AS ID; END CATCH END
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        IF EXISTS (
+            SELECT 1 FROM tblProducts P
+            WHERE P.IsDeleted = 0 AND (
+                P.ColorID = @ColorID OR
+                P.Color = (SELECT ColorName FROM tblColor WHERE ColorID = @ColorID)
+            )
+        )
+        BEGIN
+            SELECT 0 AS Success, 'Cannot delete color: It is currently assigned to 1 or more active products. Please reassign or remove products first.' AS Message, 0 AS ID;
+            RETURN;
+        END
+
+        UPDATE tblColor SET IsDeleted=1, ModifiedDate=GETDATE(), ModifiedBy=@ModifiedBy WHERE ColorID=@ColorID;
+        SELECT 1 AS Success, 'Color deleted' AS Message, @ColorID AS ID;
+    END TRY
+    BEGIN CATCH
+        SELECT 0 AS Success, ERROR_MESSAGE() AS Message, 0 AS ID;
+    END CATCH
+END
 GO
 
 /***************************************************************
  PRODUCT SPs (full CRUD with joins)
 ***************************************************************/
-CREATE OR ALTER PROCEDURE SP_GetAllProducts @CompanyID INT = NULL
+CREATE OR ALTER PROCEDURE SP_GetAllProducts 
+    @CompanyID INT = NULL,
+    @BranchID INT = NULL
 AS BEGIN SET NOCOUNT ON;
-    SELECT P.ProductID, P.CompanyID, P.ProductCode, P.ProductName,
+    SELECT P.ProductID, P.CompanyID, P.BranchID, BR.BranchName, P.ProductCode, P.ProductName,
            P.CategoryID, C.CategoryName, P.SizeID, S.SizeName AS Size, P.ColorID, CL.ColorName AS Color,
            P.AgeGroup, P.RentAmount, P.DepositAmount, P.DiscountPercent, P.StandardRentalDays,
            P.ExtraChargePerDay, P.AvailableQuantity, P.Description, P.ProductImage,
-           P.IsAvailable, P.NextAvailableDate, P.CreatedDate
+           P.IsAvailable, P.NextAvailableDate, P.CreatedDate,
+           ISNULL(P.IsFullSet, 0) AS IsFullSet, P.TopCode, P.TopSize, P.BottomCode, P.BottomSize
     FROM tblProducts P
     LEFT JOIN tblCategory C ON P.CategoryID = C.CategoryID
     LEFT JOIN tblSize S ON P.SizeID = S.SizeID
     LEFT JOIN tblColor CL ON P.ColorID = CL.ColorID
-    WHERE P.IsDeleted = 0 AND (@CompanyID IS NULL OR P.CompanyID = @CompanyID)
+    LEFT JOIN tblBranch BR ON P.BranchID = BR.BranchID
+    WHERE P.IsDeleted = 0 
+      AND (@CompanyID IS NULL OR @CompanyID = 0 OR P.CompanyID = @CompanyID)
+      AND (@BranchID IS NULL OR @BranchID = 0 OR P.BranchID = @BranchID)
     ORDER BY P.ProductID DESC;
 END
 GO
@@ -281,20 +384,27 @@ CREATE OR ALTER PROCEDURE SP_InsertProduct
     @AgeGroup VARCHAR(50)=NULL, @RentAmount DECIMAL(18,2), @DepositAmount DECIMAL(18,2),
     @DiscountPercent DECIMAL(18,2)=0, @StandardRentalDays INT=4, @ExtraChargePerDay DECIMAL(18,2)=150,
     @AvailableQuantity INT=1, @Description NVARCHAR(MAX)=NULL, @ProductImage NVARCHAR(MAX)=NULL, @CreatedBy INT=NULL
-AS BEGIN TRY
-    DECLARE @CatName VARCHAR(100), @SizeName VARCHAR(50), @ColorName VARCHAR(50);
-    SELECT @CatName = CategoryName FROM tblCategory WHERE CategoryID = @CategoryID;
-    SELECT @SizeName = SizeName FROM tblSize WHERE SizeID = @SizeID;
-    SELECT @ColorName = ColorName FROM tblColor WHERE ColorID = @ColorID;
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        DECLARE @CatName VARCHAR(100), @SizeName VARCHAR(50), @ColorName VARCHAR(50);
+        SELECT @CatName = CategoryName FROM tblCategory WHERE CategoryID = @CategoryID;
+        SELECT @SizeName = SizeName FROM tblSize WHERE SizeID = @SizeID;
+        SELECT @ColorName = ColorName FROM tblColor WHERE ColorID = @ColorID;
 
-    INSERT INTO tblProducts(CompanyID, ProductCode, ProductName, CategoryID, CategoryName, SizeID, Size, ColorID, Color,
-        AgeGroup, RentAmount, DepositAmount, DiscountPercent, StandardRentalDays, ExtraChargePerDay,
-        AvailableQuantity, Description, ProductImage, CreatedBy)
-    VALUES(@CompanyID, @ProductCode, @ProductName, @CategoryID, @CatName, @SizeID, @SizeName, @ColorID, @ColorName,
-        @AgeGroup, @RentAmount, @DepositAmount, @DiscountPercent, @StandardRentalDays, @ExtraChargePerDay,
-        @AvailableQuantity, @Description, @ProductImage, @CreatedBy);
-    SELECT 1 AS Success, 'Product added' AS Message, SCOPE_IDENTITY() AS ID;
-END TRY BEGIN CATCH SELECT 0 AS Success, ERROR_MESSAGE() AS Message, 0 AS ID; END CATCH END
+        INSERT INTO tblProducts(CompanyID, ProductCode, ProductName, CategoryID, CategoryName, SizeID, Size, ColorID, Color,
+            AgeGroup, RentAmount, DepositAmount, DiscountPercent, StandardRentalDays, ExtraChargePerDay,
+            AvailableQuantity, Description, ProductImage, CreatedBy)
+        VALUES(@CompanyID, @ProductCode, @ProductName, @CategoryID, @CatName, @SizeID, @SizeName, @ColorID, @ColorName,
+            @AgeGroup, @RentAmount, @DepositAmount, @DiscountPercent, @StandardRentalDays, @ExtraChargePerDay,
+            @AvailableQuantity, @Description, @ProductImage, @CreatedBy);
+        SELECT 1 AS Success, 'Product added' AS Message, SCOPE_IDENTITY() AS ID;
+    END TRY
+    BEGIN CATCH
+        SELECT 0 AS Success, ERROR_MESSAGE() AS Message, 0 AS ID;
+    END CATCH
+END
 GO
 
 CREATE OR ALTER PROCEDURE SP_UpdateProduct
@@ -304,30 +414,56 @@ CREATE OR ALTER PROCEDURE SP_UpdateProduct
     @DiscountPercent DECIMAL(18,2)=0, @StandardRentalDays INT=4, @ExtraChargePerDay DECIMAL(18,2)=150,
     @AvailableQuantity INT=1, @Description NVARCHAR(MAX)=NULL, @ProductImage NVARCHAR(MAX)=NULL,
     @IsAvailable BIT=1, @ModifiedBy INT=NULL
-AS BEGIN TRY
-    DECLARE @CatName VARCHAR(100), @SizeName VARCHAR(50), @ColorName VARCHAR(50);
-    SELECT @CatName = CategoryName FROM tblCategory WHERE CategoryID = @CategoryID;
-    SELECT @SizeName = SizeName FROM tblSize WHERE SizeID = @SizeID;
-    SELECT @ColorName = ColorName FROM tblColor WHERE ColorID = @ColorID;
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        DECLARE @CatName VARCHAR(100), @SizeName VARCHAR(50), @ColorName VARCHAR(50);
+        SELECT @CatName = CategoryName FROM tblCategory WHERE CategoryID = @CategoryID;
+        SELECT @SizeName = SizeName FROM tblSize WHERE SizeID = @SizeID;
+        SELECT @ColorName = ColorName FROM tblColor WHERE ColorID = @ColorID;
 
-    UPDATE tblProducts SET
-        ProductCode=@ProductCode, ProductName=@ProductName,
-        CategoryID=@CategoryID, CategoryName=@CatName, SizeID=@SizeID, Size=@SizeName,
-        ColorID=@ColorID, Color=@ColorName, AgeGroup=@AgeGroup,
-        RentAmount=@RentAmount, DepositAmount=@DepositAmount, DiscountPercent=@DiscountPercent,
-        StandardRentalDays=@StandardRentalDays, ExtraChargePerDay=@ExtraChargePerDay,
-        AvailableQuantity=@AvailableQuantity, Description=@Description, ProductImage=@ProductImage,
-        IsAvailable=@IsAvailable, ModifiedDate=GETDATE(), ModifiedBy=@ModifiedBy
-    WHERE ProductID = @ProductID;
-    SELECT 1 AS Success, 'Product updated' AS Message, @ProductID AS ID;
-END TRY BEGIN CATCH SELECT 0 AS Success, ERROR_MESSAGE() AS Message, 0 AS ID; END CATCH END
+        UPDATE tblProducts SET
+            ProductCode=@ProductCode, ProductName=@ProductName,
+            CategoryID=@CategoryID, CategoryName=@CatName, SizeID=@SizeID, Size=@SizeName,
+            ColorID=@ColorID, Color=@ColorName, AgeGroup=@AgeGroup,
+            RentAmount=@RentAmount, DepositAmount=@DepositAmount, DiscountPercent=@DiscountPercent,
+            StandardRentalDays=@StandardRentalDays, ExtraChargePerDay=@ExtraChargePerDay,
+            AvailableQuantity=@AvailableQuantity, Description=@Description, ProductImage=@ProductImage,
+            IsAvailable=@IsAvailable, ModifiedDate=GETDATE(), ModifiedBy=@ModifiedBy
+        WHERE ProductID = @ProductID;
+        SELECT 1 AS Success, 'Product updated' AS Message, @ProductID AS ID;
+    END TRY
+    BEGIN CATCH
+        SELECT 0 AS Success, ERROR_MESSAGE() AS Message, 0 AS ID;
+    END CATCH
+END
 GO
 
 CREATE OR ALTER PROCEDURE SP_DeleteProduct @ProductID INT, @ModifiedBy INT=NULL
-AS BEGIN TRY
-    UPDATE tblProducts SET IsDeleted=1, ModifiedDate=GETDATE(), ModifiedBy=@ModifiedBy WHERE ProductID=@ProductID;
-    SELECT 1 AS Success, 'Product deleted' AS Message, @ProductID AS ID;
-END TRY BEGIN CATCH SELECT 0 AS Success, ERROR_MESSAGE() AS Message, 0 AS ID; END CATCH END
+AS
+BEGIN
+    SET NOCOUNT ON;
+    BEGIN TRY
+        DECLARE @ProductCode VARCHAR(50);
+        SELECT @ProductCode = ProductCode FROM tblProducts WHERE ProductID = @ProductID;
+
+        IF EXISTS (
+            SELECT 1 FROM tblBookingItems BI
+            WHERE BI.ProductID = @ProductID OR (BI.ProductCode IS NOT NULL AND BI.ProductCode = @ProductCode)
+        )
+        BEGIN
+            SELECT 0 AS Success, 'Cannot delete product: It is associated with active or historical booking records.' AS Message, 0 AS ID;
+            RETURN;
+        END
+
+        UPDATE tblProducts SET IsDeleted=1, ModifiedDate=GETDATE(), ModifiedBy=@ModifiedBy WHERE ProductID=@ProductID;
+        SELECT 1 AS Success, 'Product deleted' AS Message, @ProductID AS ID;
+    END TRY
+    BEGIN CATCH
+        SELECT 0 AS Success, ERROR_MESSAGE() AS Message, 0 AS ID;
+    END CATCH
+END
 GO
 
 PRINT 'Masters migration completed.';

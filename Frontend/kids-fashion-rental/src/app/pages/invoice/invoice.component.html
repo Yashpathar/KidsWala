@@ -6,9 +6,20 @@
 
   <div class="invoice glass-card" id="invoice">
     <div class="invoice-header">
-      <div>
-        <h1>👑 Kids Fashion Rental Wear</h1>
-        <p>Ahmedabad, Gujarat | GST: GSTKWN001</p>
+      <div class="invoice-brand-block">
+        @if (company?.logoImage || company?.LogoImage || auth.currentUser()?.companyLogo) {
+          <img [src]="imageUrl(company?.logoImage || company?.LogoImage || auth.currentUser()?.companyLogo)" alt="Company Logo" class="invoice-company-logo" />
+        } @else {
+          <span class="invoice-icon">👑</span>
+        }
+        <div class="company-text">
+          <h1>{{ company?.companyName || auth.currentUser()?.companyName || 'Kids Fashion Rental Wear' }}</h1>
+          <p>
+            {{ company?.address || 'Ahmedabad, Gujarat' }}
+            @if (company?.mobileNo) { <span> · Ph: {{ company.mobileNo }}</span> }
+            @if (company?.gstNo) { <span> · GST: {{ company.gstNo }}</span> }
+          </p>
+        </div>
       </div>
       <div class="invoice-meta">
         <h2>INVOICE</h2>

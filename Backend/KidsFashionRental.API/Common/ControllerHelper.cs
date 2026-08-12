@@ -37,29 +37,27 @@ public static class ControllerHelper
 
 
     public static int GetCompanyId(ClaimsPrincipal user, int? fromQuery = null)
-
     {
-
-        if (fromQuery is > 0) return fromQuery.Value;
+        if (IsPlatformScope(user))
+        {
+            if (fromQuery is > 0) return fromQuery.Value;
+            return 0;
+        }
 
         if (int.TryParse(user.FindFirstValue("CompanyID"), out var cid) && cid > 0) return cid;
-
         return 0;
-
     }
 
-
-
     public static int GetBranchId(ClaimsPrincipal user, int? fromQuery = null)
-
     {
-
-        if (fromQuery is > 0) return fromQuery.Value;
+        if (IsPlatformScope(user) || IsCompanyScope(user))
+        {
+            if (fromQuery is > 0) return fromQuery.Value;
+            return 0;
+        }
 
         if (int.TryParse(user.FindFirstValue("BranchID"), out var bid) && bid > 0) return bid;
-
         return 0;
-
     }
 
 

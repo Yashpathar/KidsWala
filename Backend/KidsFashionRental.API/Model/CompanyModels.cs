@@ -45,6 +45,7 @@ public class CompanyModel
     public string? MobileNo { get; set; }
     public string? Email { get; set; }
     public string? GSTNo { get; set; }
+    public string? LogoImage { get; set; }
     public bool IsActive { get; set; } = true;
 }
 
@@ -67,7 +68,7 @@ public class RoleInsertModel
 public class RoleRightsSaveModel
 {
     public int RoleID { get; set; }
-    public List<RoleRightModel> Rights { get; set; } = [];
+    public List<RoleRightModel> Rights { get; set; } = new List<RoleRightModel>();
 }
 
 public class NotificationModel

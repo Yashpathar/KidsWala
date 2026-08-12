@@ -139,8 +139,8 @@
               <div>
                 <label>Code Prefix *</label>
                 <div class="input-with-btn">
-                  <input [(ngModel)]="batchForm.codePrefix" placeholder="e.g. BL-12" (blur)="autoGenerateBatchCodes()" />
-                  <button type="button" class="btn-subtle" (click)="autoGenerateBatchCodes()" title="Auto Code Update">
+                  <input [(ngModel)]="batchForm.codePrefix" placeholder="e.g. BL-13" (blur)="autoGenerateBatchCodes()" />
+                  <button type="button" class="btn-subtle" (click)="generateNextAutoPrefix()" title="Auto Code Generator">
                     <i class="bi bi-magic"></i> Auto-Code
                   </button>
                 </div>
@@ -211,6 +211,17 @@
                 <label>Age Group</label>
                 <input [(ngModel)]="form.ageGroup" [disabled]="viewOnly" placeholder="e.g. 8-10 Years" />
               </div>
+              @if (branches.length > 0) {
+                <div>
+                  <label>Branch *</label>
+                  <select [(ngModel)]="form.branchID" [disabled]="viewOnly">
+                    <option [ngValue]="null">Select Branch (User Branch)</option>
+                    @for (b of branches; track b.branchID || b.BranchID) {
+                      <option [ngValue]="b.branchID || b.BranchID">{{ b.branchName || b.BranchName }}</option>
+                    }
+                  </select>
+                </div>
+              }
             }
           </div>
         </div>

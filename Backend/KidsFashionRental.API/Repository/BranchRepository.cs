@@ -60,4 +60,19 @@ public class BranchRepository : IBranchRepository
         catch (Exception ex) { result.Message = ex.Message; }
         return result;
     }
+
+    public async Task<ApiResult> DeleteAsync(int branchId)
+    {
+        var result = new ApiResult();
+        try
+        {
+            var p = new DynamicParameters();
+            p.Add("BranchID", branchId);
+            var response = await BaseDataProvider.QuerySingleAsync<SpResponse>("SP_DeleteBranch", p);
+            result.Success = response?.Success == 1;
+            result.Message = response?.Message ?? "Delete failed";
+        }
+        catch (Exception ex) { result.Message = ex.Message; }
+        return result;
+    }
 }

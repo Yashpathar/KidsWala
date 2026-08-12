@@ -1,9 +1,9 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
-import { LowerCasePipe } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { MastersService } from '../../../core/services/masters.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { AlertService } from '../../../core/services/alert.service';
 import { asArray, pickId } from '../../../core/models/api.models';
 
 export interface MasterConfig {
@@ -17,13 +17,14 @@ export interface MasterConfig {
 @Component({
   selector: 'app-master-crud',
   standalone: true,
-  imports: [FormsModule, LowerCasePipe],
+  imports: [FormsModule],
   templateUrl: './master-crud.component.html',
   styleUrl: './master-crud.component.scss'
 })
 export class MasterCrudComponent implements OnInit {
   private route = inject(ActivatedRoute);
   private masters = inject(MastersService);
+  private alert = inject(AlertService);
   auth = inject(AuthService);
 
   config!: MasterConfig;
@@ -83,7 +84,10 @@ export class MasterCrudComponent implements OnInit {
     this.message = text;
     this.messageType = type;
     if (type === 'success') {
+      this.alert.toastSuccess(text);
       setTimeout(() => { if (this.message === text) this.message = ''; }, 4000);
+    } else {
+      this.alert.toastError(text);
     }
   }
 
@@ -198,28 +202,34 @@ export class MasterCrudComponent implements OnInit {
     });
   }
 
-  confirmDelete(row: any) {
+  async confirmDelete(row: any) {
     const id = pickId(row, this.config.idField, this.capitalize(this.config.idField));
     if (!id) {
       this.showMsg('Invalid record id', 'error');
       return;
     }
-    if (!confirm('Delete this record?')) return;
+    const label = row.name || row.categoryName || row.sizeName || row.colorName || 'this record';
+    const confirmed = await this.alert.confirmDelete(
+      `Delete '${label}'?`,
+      `Are you sure you want to delete this ${this.config.title || 'record'}? This action cannot be undone.`
+    );
+    if (!confirmed) return;
 
     this.loading = true;
     this.masters.delete(this.config.type, id).subscribe({
       next: res => {
         this.loading = false;
         if (res.success) {
-          this.showMsg(res.message || 'Deleted successfully', 'success');
+          this.alert.toastSuccess(res.message || 'Deleted successfully');
           this.load();
         } else {
-          this.showMsg(res.message || 'Delete failed', 'error');
+          const msg = res.message || 'Delete failed: Record is currently in use or dependent data exists.';
+          this.alert.error('Cannot Delete Record', msg);
         }
       },
       error: () => {
         this.loading = false;
-        this.showMsg('Delete request failed', 'error');
+        this.alert.error('Delete Failed', 'An unexpected error occurred while attempting to delete.');
       }
     });
   }

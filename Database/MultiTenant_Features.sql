@@ -13,12 +13,12 @@ BEGIN
     SELECT 1, m.MenuKey, 1 FROM (VALUES
         ('dashboard'),('category'),('size'),('color'),('product'),('company'),('roleRights'),
         ('bookingAdd'),('bookingList'),('reportDelivery'),('reportReturn'),('reportBooking'),('reportPayment')
-    ) v(MenuKey) m;
+    ) m(MenuKey);
     INSERT INTO tblRoleRights(RoleID, MenuKey, CanAccess)
     SELECT 2, m.MenuKey, 1 FROM (VALUES
         ('dashboard'),('category'),('size'),('color'),('product'),
         ('bookingAdd'),('bookingList'),('reportDelivery'),('reportReturn'),('reportBooking'),('reportPayment')
-    ) v(MenuKey) m;
+    ) m(MenuKey);
 END
 GO
 
@@ -44,30 +44,32 @@ GO
 CREATE OR ALTER PROCEDURE SP_GetAllCompanies
 AS
 BEGIN
-    SELECT CompanyID, CompanyName, CompanyCode, BusinessType, Address, MobileNo, Email, GSTNo, IsActive
+    SELECT CompanyID, CompanyName, CompanyCode, BusinessType, Address, MobileNo, Email, GSTNo, LogoImage, IsActive
     FROM tblCompany WHERE IsDeleted = 0 ORDER BY CompanyName;
 END
 GO
 
 CREATE OR ALTER PROCEDURE SP_InsertCompany
     @CompanyName VARCHAR(200), @CompanyCode VARCHAR(50), @BusinessType VARCHAR(100),
-    @Address NVARCHAR(500), @MobileNo VARCHAR(20), @Email VARCHAR(200), @GSTNo VARCHAR(50)
+    @Address NVARCHAR(500), @MobileNo VARCHAR(20), @Email VARCHAR(200), @GSTNo VARCHAR(50),
+    @LogoImage NVARCHAR(MAX) = NULL
 AS
 BEGIN
-    INSERT INTO tblCompany(CompanyName, CompanyCode, BusinessType, Address, MobileNo, Email, GSTNo)
-    VALUES(@CompanyName, @CompanyCode, @BusinessType, @Address, @MobileNo, @Email, @GSTNo);
+    INSERT INTO tblCompany(CompanyName, CompanyCode, BusinessType, Address, MobileNo, Email, GSTNo, LogoImage)
+    VALUES(@CompanyName, @CompanyCode, @BusinessType, @Address, @MobileNo, @Email, @GSTNo, @LogoImage);
     SELECT 1 AS Success, 'Company added' AS Message, SCOPE_IDENTITY() AS ID;
 END
 GO
 
 CREATE OR ALTER PROCEDURE SP_UpdateCompany
     @CompanyID INT, @CompanyName VARCHAR(200), @CompanyCode VARCHAR(50), @BusinessType VARCHAR(100),
-    @Address NVARCHAR(500), @MobileNo VARCHAR(20), @Email VARCHAR(200), @GSTNo VARCHAR(50), @IsActive BIT = 1
+    @Address NVARCHAR(500), @MobileNo VARCHAR(20), @Email VARCHAR(200), @GSTNo VARCHAR(50),
+    @LogoImage NVARCHAR(MAX) = NULL, @IsActive BIT = 1
 AS
 BEGIN
     UPDATE tblCompany SET
         CompanyName=@CompanyName, CompanyCode=@CompanyCode, BusinessType=@BusinessType,
-        Address=@Address, MobileNo=@MobileNo, Email=@Email, GSTNo=@GSTNo, IsActive=@IsActive
+        Address=@Address, MobileNo=@MobileNo, Email=@Email, GSTNo=@GSTNo, LogoImage=@LogoImage, IsActive=@IsActive
     WHERE CompanyID=@CompanyID;
     SELECT 1 AS Success, 'Company updated' AS Message, @CompanyID AS ID;
 END

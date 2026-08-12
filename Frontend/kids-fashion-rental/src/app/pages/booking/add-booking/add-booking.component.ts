@@ -7,6 +7,7 @@ import { Subject, debounceTime, distinctUntilChanged, takeUntil } from 'rxjs';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { ProductApiService, SizeApiService } from '../../../core/services/masters.service';
+import { AlertService } from '../../../core/services/alert.service';
 import {
   AvailabilityResult,
   BookingItem,
@@ -34,6 +35,7 @@ export class AddBookingComponent implements OnInit, OnDestroy {
   private productApi = inject(ProductApiService);
   private sizeApi = inject(SizeApiService);
   private router = inject(Router);
+  private alert = inject(AlertService);
   private destroy$ = new Subject<void>();
   private productSearch$ = new Subject<string>();
   private mobileLookup$ = new Subject<string>();
@@ -641,6 +643,12 @@ export class AddBookingComponent implements OnInit, OnDestroy {
   private showMsg(text: string, type: 'success' | 'error') {
     this.message = text;
     this.messageType = type;
+    if (type === 'success') {
+      this.alert.toastSuccess(text);
+      setTimeout(() => { if (this.message === text) this.message = ''; }, 4000);
+    } else {
+      this.alert.toastError(text);
+    }
   }
 
   private today() {

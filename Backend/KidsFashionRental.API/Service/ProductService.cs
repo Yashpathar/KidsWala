@@ -10,7 +10,7 @@ public class ProductService : IProductService
     private readonly IProductRepository _repo;
     public ProductService(IProductRepository repo) => _repo = repo;
 
-    public Task<ApiResult> GetAllAsync(int? companyId) => _repo.GetAllAsync(companyId);
+    public Task<ApiResult> GetAllAsync(int? companyId, int? branchId = null) => _repo.GetAllAsync(companyId, branchId);
 
     public Task<ApiResult> GetByIdAsync(int id) =>
         id <= 0 ? Task.FromResult(ApiResult.Fail("Invalid product id")) : _repo.GetByIdAsync(id);

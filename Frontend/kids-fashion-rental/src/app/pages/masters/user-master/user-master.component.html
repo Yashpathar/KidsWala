@@ -1,0 +1,247 @@
+<div class="user-page-container">
+  <!-- Header Bar -->
+  <div class="page-header">
+    <div class="header-title">
+      <h2><i class="bi bi-people-fill me-2"></i>User Management</h2>
+      <p class="text-muted mb-0">Create and manage application users, roles, and branch assignments</p>
+    </div>
+    @if (auth.canCreateMenu('user')) {
+      <button class="btn btn-primary btn-add" (click)="openAdd()">
+        <i class="bi bi-person-plus-fill me-1"></i> Add New User
+      </button>
+    }
+  </div>
+
+  <!-- Global Alert Message -->
+  <div *ngIf="message" class="alert alert-dismissible fade show" [ngClass]="messageType === 'success' ? 'alert-success' : 'alert-danger'">
+    <i class="bi me-2" [ngClass]="messageType === 'success' ? 'bi-check-circle-fill' : 'bi-exclamation-triangle-fill'"></i>
+    {{ message }}
+    <button type="button" class="btn-close" (click)="message = ''"></button>
+  </div>
+
+  <!-- Search and Filter Bar -->
+  <div class="filter-card">
+    <div class="row g-3 align-items-center">
+      <div class="col-md-6 col-lg-5">
+        <div class="input-group">
+          <span class="input-group-text"><i class="bi bi-search"></i></span>
+          <input type="text" class="form-control" placeholder="Search by username, full name, role, branch..." [(ngModel)]="search" />
+        </div>
+      </div>
+      <div class="col-md-4 col-lg-4" *ngIf="auth.isCompanyAdmin() || auth.isPlatformAdmin()">
+        <select class="form-select branch-select" [(ngModel)]="selectedBranchId" (change)="onBranchFilterChange()">
+          <option [ngValue]="null">Filter All Branches</option>
+          <option *ngFor="let b of branches" [value]="b.branchID">{{ b.branchName }}</option>
+        </select>
+      </div>
+      <div class="col-md-2 col-lg-3 text-end">
+        <span class="badge bg-light text-dark p-2 fs-6">Total: {{ filtered.length }} Users</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dynamic Branch Tabs Bar -->
+  <div class="branch-tabs-wrapper mb-3" *ngIf="auth.isCompanyAdmin() || auth.isPlatformAdmin()">
+    <ul class="nav nav-pills branch-tabs">
+      <li class="nav-item">
+        <button class="nav-link" [class.active]="activeTab === 'all'" (click)="selectTab('all')">
+          <i class="bi bi-grid-fill me-1.5"></i> All Branches
+          <span class="tab-badge ms-1.5" [class.active-badge]="activeTab === 'all'">{{ users.length }}</span>
+        </button>
+      </li>
+      <li class="nav-item" *ngFor="let b of branches">
+        <button class="nav-link" [class.active]="activeTab === b.branchID" (click)="selectTab(b.branchID)">
+          <i class="bi bi-shop me-1.5"></i> {{ b.branchName }}
+          <span class="tab-badge ms-1.5" [class.active-badge]="activeTab === b.branchID">{{ getUserCountByBranch(b.branchID) }}</span>
+        </button>
+      </li>
+    </ul>
+  </div>
+
+  <!-- Loading State -->
+  <div *ngIf="loading" class="text-center py-5">
+    <div class="spinner-border text-primary" role="status">
+      <span class="visually-hidden">Loading users...</span>
+    </div>
+  </div>
+
+  <!-- Data Table -->
+  <div *ngIf="!loading" class="table-card">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Username</th>
+            <th>Password</th>
+            <th>Full Name</th>
+            <th>Role</th>
+            <th>Branch</th>
+            <th>Contact</th>
+            <th>Status</th>
+            <th class="text-end">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr *ngFor="let u of filtered">
+            <td><strong>#{{ u.userID }}</strong></td>
+            <td>
+              <div class="user-cell">
+                <i class="bi bi-person-circle fs-5 me-2 text-primary"></i>
+                <span class="fw-semibold">{{ u.username }}</span>
+              </div>
+            </td>
+            <td>
+              <div class="password-inline-wrap">
+                <span class="password-text font-monospace fw-semibold">
+                  {{ visiblePasswords[u.userID] ? (u.password || 'N/A') : '••••••••' }}
+                </span>
+                <button type="button" class="btn btn-sm btn-icon-eye"
+                        (click)="togglePasswordVisibility(u.userID)"
+                        [title]="visiblePasswords[u.userID] ? 'Hide Password' : 'Show Password'">
+                  <i class="bi" [ngClass]="visiblePasswords[u.userID] ? 'bi-eye-slash-fill text-danger' : 'bi-eye-fill text-primary'"></i>
+                </button>
+              </div>
+            </td>
+            <td>{{ u.fullName }}</td>
+            <td>
+              <span class="badge-role" [ngClass]="getRoleBadgeClass(u.roleName)">
+                {{ u.roleName || 'Staff' }}
+              </span>
+            </td>
+            <td>
+              <span *ngIf="u.branchName" class="badge-branch-pill">
+                <i class="bi bi-building me-1"></i>{{ u.branchName }}
+              </span>
+              <span *ngIf="!u.branchName" class="text-muted fst-italic">All Branches</span>
+            </td>
+            <td>
+              <div *ngIf="u.mobileNo"><i class="bi bi-telephone me-1 text-muted"></i>{{ u.mobileNo }}</div>
+              <div *ngIf="u.email" class="small text-muted"><i class="bi bi-envelope me-1"></i>{{ u.email }}</div>
+            </td>
+            <td>
+              <span class="badge" [ngClass]="u.isActive ? 'bg-success-subtle text-success' : 'bg-secondary-subtle text-secondary'">
+                {{ u.isActive ? 'Active' : 'Inactive' }}
+              </span>
+            </td>
+            <td class="text-end">
+              @if (auth.canUpdateMenu('user')) {
+                <button class="btn btn-sm btn-outline-primary me-1" (click)="openEdit(u)" title="Edit User">
+                  <i class="bi bi-pencil-square"></i>
+                </button>
+              }
+              @if (auth.canDeleteMenu('user')) {
+                <button class="btn btn-sm btn-outline-danger" (click)="delete(u)" title="Delete User">
+                  <i class="bi bi-trash-fill"></i>
+                </button>
+              }
+            </td>
+          </tr>
+          <tr *ngIf="filtered.length === 0">
+            <td colspan="8" class="text-center py-4 text-muted">
+              <i class="bi bi-inbox fs-3 d-block mb-1"></i> No users found.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Add / Edit Modal -->
+  <div class="modal fade show d-block" tabindex="-1" *ngIf="showModal" style="background: rgba(0,0,0,0.5);">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+      <div class="modal-content shadow-lg">
+        <div class="modal-header bg-primary text-white">
+          <h5 class="modal-title">
+            <i class="bi" [ngClass]="form.userID ? 'bi-pencil-square' : 'bi-person-plus-fill'"></i>
+            {{ form.userID ? 'Edit User #' + form.userID : 'Create New User' }}
+          </h5>
+          <button type="button" class="btn-close btn-close-white" (click)="closeModal()"></button>
+        </div>
+        <div class="modal-body p-4">
+          <form (ngSubmit)="save()">
+            <div class="row g-3">
+              <!-- Username -->
+              <div class="col-md-6">
+                <label class="form-label required">Username</label>
+                <input type="text" class="form-control" [(ngModel)]="form.username" name="username" required placeholder="e.g. staff_nikol" />
+              </div>
+
+              <!-- Password -->
+              <div class="col-md-6">
+                <label class="form-label" [class.required]="!form.userID">
+                  Password <span *ngIf="form.userID" class="small text-muted">(Leave blank to keep unchanged)</span>
+                </label>
+                <div class="input-group">
+                  <input [type]="showFormPassword ? 'text' : 'password'" class="form-control" [(ngModel)]="form.password" name="password" [required]="!form.userID" placeholder="Enter password" />
+                  <button type="button" class="btn btn-outline-secondary" (click)="toggleFormPassword()" [title]="showFormPassword ? 'Hide Password' : 'Show Password'">
+                    <i class="bi" [ngClass]="showFormPassword ? 'bi-eye-slash-fill text-danger' : 'bi-eye-fill'"></i>
+                  </button>
+                </div>
+              </div>
+
+              <!-- Full Name -->
+              <div class="col-md-6">
+                <label class="form-label required">Full Name</label>
+                <input type="text" class="form-control" [(ngModel)]="form.fullName" name="fullName" required placeholder="e.g. Ramesh Patel" />
+              </div>
+
+              <!-- Role Selection -->
+              <div class="col-md-6">
+                <label class="form-label required">Assign Role</label>
+                <select class="form-select" [(ngModel)]="form.roleID" name="roleID" required>
+                  <option *ngFor="let r of roles" [value]="r.roleID">{{ r.roleName }}</option>
+                </select>
+              </div>
+
+              <!-- Branch Assignment -->
+              <div class="col-md-6">
+                <label class="form-label">Assign Branch</label>
+                <select class="form-select" [(ngModel)]="form.branchID" name="branchID">
+                  <option [ngValue]="null">All Branches (Company Wide)</option>
+                  <option *ngFor="let b of branches" [value]="b.branchID">{{ b.branchName }}</option>
+                </select>
+              </div>
+
+              <!-- Company Assignment -->
+              <div class="col-md-6" *ngIf="auth.isPlatformAdmin()">
+                <label class="form-label">Assign Company</label>
+                <select class="form-select" [(ngModel)]="form.companyID" name="companyID">
+                  <option *ngFor="let c of companies" [value]="c.companyID">{{ c.companyName }}</option>
+                </select>
+              </div>
+
+              <!-- Mobile No -->
+              <div class="col-md-6">
+                <label class="form-label">Mobile Number</label>
+                <input type="text" class="form-control" [(ngModel)]="form.mobileNo" name="mobileNo" placeholder="e.g. 9898012345" />
+              </div>
+
+              <!-- Email -->
+              <div class="col-md-6">
+                <label class="form-label">Email Address</label>
+                <input type="email" class="form-control" [(ngModel)]="form.email" name="email" placeholder="e.g. user@domain.com" />
+              </div>
+
+              <!-- Active Switch -->
+              <div class="col-12 mt-3" *ngIf="form.userID">
+                <div class="form-check form-switch">
+                  <input class="form-check-input" type="checkbox" id="isActive" [(ngModel)]="form.isActive" name="isActive" />
+                  <label class="form-check-label fw-semibold" for="isActive">User Account Active</label>
+                </div>
+              </div>
+            </div>
+
+            <div class="modal-footer px-0 pb-0 mt-4">
+              <button type="button" class="btn btn-secondary" (click)="closeModal()">Cancel</button>
+              <button type="submit" class="btn btn-primary px-4" [disabled]="saving">
+                <span *ngIf="saving" class="spinner-border spinner-border-sm me-1"></span>
+                {{ form.userID ? 'Update User' : 'Create User' }}
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>

@@ -13,6 +13,7 @@ export interface UserInfo {
   roleName: string;
   companyID?: number;
   companyName?: string;
+  companyLogo?: string;
   branchID?: number;
   branchName?: string;
   dataScope?: string;
@@ -95,6 +96,21 @@ export class AuthService {
     return keys.some(k => this.canViewMenu(k));
   }
 
+  canCreateMenu(menuKey: string): boolean {
+    const row = this.menuRights().find(r => r.menuKey === menuKey);
+    return !!(row?.isCreate);
+  }
+
+  canUpdateMenu(menuKey: string): boolean {
+    const row = this.menuRights().find(r => r.menuKey === menuKey);
+    return !!(row?.isUpdate);
+  }
+
+  canDeleteMenu(menuKey: string): boolean {
+    const row = this.menuRights().find(r => r.menuKey === menuKey);
+    return !!(row?.isDelete);
+  }
+
   private defaultMenuAccess(menuKey: string): boolean {
     if (this.isCompanyAdmin()) {
       return !['company', 'roleRights'].includes(menuKey);
@@ -139,6 +155,7 @@ export class AuthService {
       roleName: String(user['roleName'] ?? user['RoleName'] ?? ''),
       companyID: Number(user['companyID'] ?? user['CompanyID'] ?? 0) || undefined,
       companyName: String(user['companyName'] ?? user['CompanyName'] ?? ''),
+      companyLogo: String(user['companyLogo'] ?? user['CompanyLogo'] ?? user['logoImage'] ?? user['LogoImage'] ?? ''),
       branchID: Number(user['branchID'] ?? user['BranchID'] ?? 0) || undefined,
       branchName: String(user['branchName'] ?? user['BranchName'] ?? ''),
       dataScope: String(user['dataScope'] ?? user['DataScope'] ?? 'CompanyAll')

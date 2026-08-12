@@ -1,8 +1,8 @@
 <div class="page-header flex-between">
   <div><h2>Company Master</h2><p class="breadcrumb">Super Admin · multi-company setup</p></div>
-  <button type="button" class="btn-primary" (click)="openAdd()"><i class="bi bi-building-add"></i> Add Company</button>
-</div>
-
+  @if (auth.canCreateMenu('company')) {
+    <button type="button" class="btn-primary" (click)="openAdd()"><i class="bi bi-building-add"></i> Add Company</button>
+  }
 <div class="ui-card login-help">
   <h4><i class="bi bi-box-arrow-in-right"></i> Login model</h4>
   <p>Each user has one <strong>User ID</strong>. On login the system reads <strong>Role, Company, Branch</strong> from the user record — no extra selection step.</p>
@@ -12,16 +12,40 @@
 @if (error && !showModal) { <div class="alert-error">{{ error }}</div> }
 <div class="ui-card table-wrap">
   <table class="data-table">
-    <thead><tr><th>Name</th><th>Code</th><th>Mobile</th><th>Email</th><th>GST</th><th></th></tr></thead>
+    <thead>
+      <tr>
+        <th style="width: 50px;">Logo</th>
+        <th>Name</th>
+        <th>Code</th>
+        <th>Mobile</th>
+        <th>Email</th>
+        <th>GST</th>
+        <th class="text-end">Actions</th>
+      </tr>
+    </thead>
     <tbody>
       @for (c of rows; track c.companyID) {
         <tr>
+          <td>
+            @if (c.logoImage || c.LogoImage) {
+              <img [src]="imageUrl(c.logoImage || c.LogoImage)" alt="Logo" class="company-logo-thumb" />
+            } @else {
+              <span class="company-logo-ph"><i class="bi bi-building"></i></span>
+            }
+          </td>
           <td><strong>{{ c.companyName }}</strong></td>
           <td>{{ c.companyCode }}</td>
           <td>{{ c.mobileNo }}</td>
           <td>{{ c.email }}</td>
           <td>{{ c.gstNo }}</td>
-          <td><button type="button" class="btn-sm" (click)="openEdit(c)">Edit</button></td>
+          <td class="text-end">
+            @if (auth.canUpdateMenu('company')) {
+              <button type="button" class="btn-sm" (click)="openEdit(c)"><i class="bi bi-pencil"></i> Edit</button>
+            }
+            @if (auth.canDeleteMenu('company')) {
+              <button type="button" class="btn-sm danger ms-1" (click)="deleteCompany(c)"><i class="bi bi-trash"></i> Delete</button>
+            }
+          </td>
         </tr>
       }
     </tbody>
@@ -29,21 +53,43 @@
 </div>
 @if (showModal) {
   <div class="app-modal-backdrop" (click)="showModal=false">
-    <div class="app-modal-panel ui-card" (click)="$event.stopPropagation()">
-      <h3>{{ form.companyID ? 'Edit' : 'Add' }} Company</h3>
+    <div class="app-modal-panel ui-card modal-company-form" (click)="$event.stopPropagation()">
+      <h3><i class="bi bi-building"></i> {{ form.companyID ? 'Edit' : 'Add' }} Company</h3>
+      
+      <!-- Company Logo Upload Section -->
+      <div class="logo-upload-section">
+        <label>Company Logo</label>
+        <div class="logo-preview-row">
+          @if (form.logoImage) {
+            <img [src]="imageUrl(form.logoImage)" alt="Logo Preview" class="company-logo-preview" />
+          } @else {
+            <div class="company-logo-preview ph"><i class="bi bi-image"></i><span>No Logo</span></div>
+          }
+          <div class="logo-upload-controls">
+            <label class="btn-outline btn-sm upload-btn">
+              <i class="bi bi-upload"></i> {{ form.logoImage ? 'Change Logo' : 'Upload Logo' }}
+              <input type="file" accept="image/*" (change)="onLogoSelected($event)" style="display: none;" />
+            </label>
+            @if (form.logoImage) {
+              <button type="button" class="btn-sm danger" (click)="form.logoImage=''">Remove</button>
+            }
+          </div>
+        </div>
+      </div>
+
       <div class="form-grid">
-        <div><label>Company Name *</label><input [(ngModel)]="form.companyName" /></div>
-        <div><label>Code</label><input [(ngModel)]="form.companyCode" /></div>
-        <div><label>Business Type</label><input [(ngModel)]="form.businessType" /></div>
-        <div><label>Mobile</label><input [(ngModel)]="form.mobileNo" /></div>
-        <div><label>Email</label><input [(ngModel)]="form.email" /></div>
-        <div><label>GST No</label><input [(ngModel)]="form.gstNo" /></div>
-        <div class="full"><label>Address</label><textarea [(ngModel)]="form.address" rows="2"></textarea></div>
+        <div><label>Company Name *</label><input [(ngModel)]="form.companyName" placeholder="e.g. Kids Walla" /></div>
+        <div><label>Code</label><input [(ngModel)]="form.companyCode" placeholder="e.g. KWN" /></div>
+        <div><label>Business Type</label><input [(ngModel)]="form.businessType" placeholder="e.g. Rental Wear" /></div>
+        <div><label>Mobile</label><input [(ngModel)]="form.mobileNo" placeholder="Phone / Mobile No" /></div>
+        <div><label>Email</label><input [(ngModel)]="form.email" placeholder="email@domain.com" /></div>
+        <div><label>GST No</label><input [(ngModel)]="form.gstNo" placeholder="GSTIN Number" /></div>
+        <div class="full"><label>Address</label><textarea [(ngModel)]="form.address" rows="2" placeholder="Full shop/company address"></textarea></div>
       </div>
       @if (error) { <div class="alert-error modal-error">{{ error }}</div> }
       <div class="modal-actions">
         <button type="button" class="btn-outline" (click)="showModal=false">Cancel</button>
-        <button type="button" class="btn-primary" (click)="save()" [disabled]="saving">Save</button>
+        <button type="button" class="btn-primary" (click)="save()" [disabled]="saving">Save Company</button>
       </div>
     </div>
   </div>

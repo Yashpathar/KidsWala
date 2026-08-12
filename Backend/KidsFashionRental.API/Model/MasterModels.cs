@@ -43,6 +43,8 @@ public class ProductMasterModel
 {
     public int ProductID { get; set; }
     public int CompanyID { get; set; }
+    public int? BranchID { get; set; }
+    public string? BranchName { get; set; }
     public string ProductCode { get; set; } = string.Empty;
     public string ProductName { get; set; } = string.Empty;
     public int CategoryID { get; set; }

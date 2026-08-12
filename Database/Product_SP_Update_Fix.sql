@@ -1,30 +1,34 @@
-/* Optional: align SP_UpdateProduct on server (API fix removes extra @CompanyID from C# call).
-   Run only if you prefer CompanyID on update. Default migration SP is correct without CompanyID. */
+/* SP_GetAllProducts & SP_UpdateProduct Fix Script
+   Run in SQL Server Management Studio (SSMS) on DB_A6B32D_LabelManagement */
+
 USE DB_A6B32D_LabelManagement;
 GO
 
-CREATE OR ALTER PROCEDURE SP_UpdateProduct
-    @ProductID INT, @ProductCode VARCHAR(50), @ProductName VARCHAR(200),
-    @CategoryID INT, @SizeID INT, @ColorID INT,
-    @AgeGroup VARCHAR(50)=NULL, @RentAmount DECIMAL(18,2), @DepositAmount DECIMAL(18,2),
-    @DiscountPercent DECIMAL(18,2)=0, @StandardRentalDays INT=4, @ExtraChargePerDay DECIMAL(18,2)=150,
-    @AvailableQuantity INT=1, @Description NVARCHAR(MAX)=NULL, @ProductImage NVARCHAR(MAX)=NULL,
-    @IsAvailable BIT=1, @ModifiedBy INT=NULL
-AS BEGIN TRY
-    DECLARE @CatName VARCHAR(100), @SizeName VARCHAR(50), @ColorName VARCHAR(50);
-    SELECT @CatName = CategoryName FROM tblCategory WHERE CategoryID = @CategoryID;
-    SELECT @SizeName = SizeName FROM tblSize WHERE SizeID = @SizeID;
-    SELECT @ColorName = ColorName FROM tblColor WHERE ColorID = @ColorID;
+SET ANSI_NULLS ON;
+GO
+SET QUOTED_IDENTIFIER ON;
+GO
 
-    UPDATE tblProducts SET
-        ProductCode=@ProductCode, ProductName=@ProductName,
-        CategoryID=@CategoryID, CategoryName=@CatName, SizeID=@SizeID, Size=@SizeName,
-        ColorID=@ColorID, Color=@ColorName, AgeGroup=@AgeGroup,
-        RentAmount=@RentAmount, DepositAmount=@DepositAmount, DiscountPercent=@DiscountPercent,
-        StandardRentalDays=@StandardRentalDays, ExtraChargePerDay=@ExtraChargePerDay,
-        AvailableQuantity=@AvailableQuantity, Description=@Description, ProductImage=@ProductImage,
-        IsAvailable=@IsAvailable, ModifiedDate=GETDATE(), ModifiedBy=@ModifiedBy
-    WHERE ProductID = @ProductID;
-    SELECT 1 AS Success, 'Product updated' AS Message, @ProductID AS ID;
-END TRY BEGIN CATCH SELECT 0 AS Success, ERROR_MESSAGE() AS Message, 0 AS ID; END CATCH END
+CREATE OR ALTER PROCEDURE SP_GetAllProducts 
+    @CompanyID INT = NULL,
+    @BranchID INT = NULL
+AS 
+BEGIN 
+    SET NOCOUNT ON;
+    SELECT P.ProductID, P.CompanyID, P.BranchID, BR.BranchName, P.ProductCode, P.ProductName,
+           P.CategoryID, C.CategoryName, P.SizeID, S.SizeName AS Size, P.ColorID, CL.ColorName AS Color,
+           P.AgeGroup, P.RentAmount, P.DepositAmount, P.DiscountPercent, P.StandardRentalDays,
+           P.ExtraChargePerDay, P.AvailableQuantity, P.Description, P.ProductImage,
+           P.IsAvailable, P.NextAvailableDate, P.CreatedDate,
+           ISNULL(P.IsFullSet, 0) AS IsFullSet, P.TopCode, P.TopSize, P.BottomCode, P.BottomSize
+    FROM tblProducts P
+    LEFT JOIN tblCategory C ON P.CategoryID = C.CategoryID
+    LEFT JOIN tblSize S ON P.SizeID = S.SizeID
+    LEFT JOIN tblColor CL ON P.ColorID = CL.ColorID
+    LEFT JOIN tblBranch BR ON P.BranchID = BR.BranchID
+    WHERE P.IsDeleted = 0 
+      AND (@CompanyID IS NULL OR @CompanyID = 0 OR P.CompanyID = @CompanyID)
+      AND (@BranchID IS NULL OR @BranchID = 0 OR P.BranchID = @BranchID)
+    ORDER BY P.ProductID DESC;
+END
 GO

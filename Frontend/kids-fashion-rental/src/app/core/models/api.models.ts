@@ -112,8 +112,8 @@ export function normalizeApiResult<T = unknown>(body: unknown): ApiResult<T> {
   };
 }
 
-export function asArray<T>(data: unknown): T[] {
-  return Array.isArray(data) ? data : [];
+export function asArray<T = any>(data: unknown): T[] {
+  return Array.isArray(data) ? (data as T[]) : [];
 }
 
 export function pickId(row: unknown, ...keys: string[]): number {

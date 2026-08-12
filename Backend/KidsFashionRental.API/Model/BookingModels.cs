@@ -151,6 +151,8 @@ public class CustomerModel
 {
     public int CustomerID { get; set; }
     public int CompanyID { get; set; }
+    public int? BranchID { get; set; }
+    public string? BranchName { get; set; }
     public string FullName { get; set; } = string.Empty;
     public string ContactNo1 { get; set; } = string.Empty;
     public string? ContactNo2 { get; set; }
@@ -163,6 +165,8 @@ public class ProductModel
 {
     public int ProductID { get; set; }
     public int? CompanyID { get; set; }
+    public int? BranchID { get; set; }
+    public string? BranchName { get; set; }
     public string ProductCode { get; set; } = string.Empty;
     public string ProductName { get; set; } = string.Empty;
     public string CategoryName { get; set; } = string.Empty;

@@ -1,19 +1,28 @@
-<div class="app-shell" [class.sidebar-collapsed]="!sidebarOpen">
+<div class="app-shell" [class.sidebar-collapsed]="!sidebarOpen" [class.mobile-sidebar-open]="mobileSidebarOpen">
+  <div class="sidebar-backdrop" (click)="closeMobileSidebar()"></div>
+
   <aside class="sidebar">
     <div class="brand">
       <div class="brand-icon-wrap">
-        <span class="brand-icon">👑</span>
+        @if (auth.currentUser()?.companyLogo) {
+          <img [src]="imageUrl(auth.currentUser()?.companyLogo)" alt="Company Logo" class="brand-company-logo" />
+        } @else {
+          <span class="brand-icon">👑</span>
+        }
       </div>
       <div class="brand-text">
-        <strong>KIDS FASHION</strong>
-        <small>RENTAL WEAR</small>
+        <strong>{{ auth.currentUser()?.companyName || 'KIDS FASHION' }}</strong>
+        <span class="brand-tag">RENTAL WEAR</span>
       </div>
+      <button type="button" class="mobile-close-btn" (click)="closeMobileSidebar()" aria-label="Close menu">
+        <i class="bi bi-x-lg"></i>
+      </button>
     </div>
 
     <nav class="sidebar-nav">
       @if (auth.canViewMenu('dashboard')) {
         <p class="nav-label">MAIN</p>
-        <a routerLink="/dashboard" routerLinkActive="active" class="nav-item">
+        <a routerLink="/dashboard" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
           <i class="bi bi-grid-1x2-fill"></i>
           <span>Dashboard</span>
         </a>
@@ -22,47 +31,53 @@
       @if (auth.canViewAnyMenu(['category', 'size', 'color', 'product'])) {
         <p class="nav-label">MASTERS</p>
         @if (auth.canViewMenu('category')) {
-          <a routerLink="/masters/category" routerLinkActive="active" class="nav-item">
+          <a routerLink="/masters/category" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
             <i class="bi bi-folder2-open"></i>
             <span>Category Master</span>
           </a>
         }
         @if (auth.canViewMenu('size')) {
-          <a routerLink="/masters/size" routerLinkActive="active" class="nav-item">
+          <a routerLink="/masters/size" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
             <i class="bi bi-rulers"></i>
             <span>Size Master</span>
           </a>
         }
         @if (auth.canViewMenu('color')) {
-          <a routerLink="/masters/color" routerLinkActive="active" class="nav-item">
+          <a routerLink="/masters/color" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
             <i class="bi bi-palette"></i>
             <span>Color Master</span>
           </a>
         }
         @if (auth.canViewMenu('product')) {
-          <a routerLink="/masters/product" routerLinkActive="active" class="nav-item">
+          <a routerLink="/masters/product" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
             <i class="bi bi-bag-check"></i>
             <span>Product Master</span>
           </a>
         }
       }
 
-      @if (auth.canViewAnyMenu(['company', 'branch', 'roleRights'])) {
+      @if (auth.canViewAnyMenu(['company', 'branch', 'roleRights', 'user'])) {
         <p class="nav-label">PLATFORM</p>
         @if (auth.canViewMenu('company')) {
-          <a routerLink="/masters/company" routerLinkActive="active" class="nav-item">
+          <a routerLink="/masters/company" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
             <i class="bi bi-building"></i>
             <span>Company Master</span>
           </a>
         }
         @if (auth.canViewMenu('branch')) {
-          <a routerLink="/masters/branch" routerLinkActive="active" class="nav-item">
+          <a routerLink="/masters/branch" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
             <i class="bi bi-shop"></i>
             <span>Branch Master</span>
           </a>
         }
+        @if (auth.canViewMenu('user')) {
+          <a routerLink="/masters/user" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+            <i class="bi bi-people"></i>
+            <span>User Master</span>
+          </a>
+        }
         @if (auth.canViewMenu('roleRights')) {
-          <a routerLink="/masters/role-rights" routerLinkActive="active" class="nav-item">
+          <a routerLink="/masters/role-rights" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
             <i class="bi bi-shield-lock"></i>
             <span>Role Rights</span>
           </a>
@@ -72,13 +87,13 @@
       @if (auth.canViewAnyMenu(['bookingAdd', 'bookingList'])) {
         <p class="nav-label">BOOKING</p>
         @if (auth.canViewMenu('bookingAdd')) {
-          <a routerLink="/booking/add" routerLinkActive="active" class="nav-item">
-            <i class="bi bi-plus-circle"></i>
+          <a routerLink="/booking/add" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+            <i class="bi bi-plus-circle-fill"></i>
             <span>Add Booking</span>
           </a>
         }
         @if (auth.canViewMenu('bookingList')) {
-          <a routerLink="/booking/list" routerLinkActive="active" class="nav-item">
+          <a routerLink="/booking/list" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
             <i class="bi bi-journal-text"></i>
             <span>Booking List</span>
           </a>
@@ -88,26 +103,26 @@
       @if (auth.canViewAnyMenu(['reportDelivery', 'reportReturn', 'reportBooking', 'reportPayment'])) {
         <p class="nav-label">REPORTS</p>
         @if (auth.canViewMenu('reportBooking')) {
-          <a routerLink="/reports" routerLinkActive="active" class="nav-item" [routerLinkActiveOptions]="{ exact: true }">
-            <i class="bi bi-bar-chart"></i>
+          <a routerLink="/reports" routerLinkActive="active" class="nav-item" [routerLinkActiveOptions]="{ exact: true }" (click)="closeMobileSidebar()">
+            <i class="bi bi-bar-chart-line-fill"></i>
             <span>All Reports</span>
           </a>
         }
         @if (auth.canViewMenu('reportDelivery')) {
-          <a routerLink="/reports/delivery" routerLinkActive="active" class="nav-item">
+          <a routerLink="/reports/delivery" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
             <i class="bi bi-truck"></i>
             <span>Today Delivery</span>
           </a>
         }
         @if (auth.canViewMenu('reportReturn')) {
-          <a routerLink="/reports/return" routerLinkActive="active" class="nav-item">
+          <a routerLink="/reports/return" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
             <i class="bi bi-arrow-return-left"></i>
             <span>Today Return</span>
           </a>
         }
         @if (auth.canViewMenu('reportPayment')) {
-          <a routerLink="/reports/payments" routerLinkActive="active" class="nav-item">
-            <i class="bi bi-credit-card"></i>
+          <a routerLink="/reports/payments" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+            <i class="bi bi-credit-card-2-front"></i>
             <span>Payment Report</span>
           </a>
         }
@@ -123,47 +138,67 @@
   <div class="main-area">
     <header class="topbar">
       <button type="button" class="menu-btn" (click)="toggleSidebar()" aria-label="Toggle menu">
-        <i class="bi bi-list"></i>
+        <i class="bi bi-layout-sidebar"></i>
       </button>
+
       <div class="search-wrap">
         <i class="bi bi-search"></i>
-        <input class="search-input" placeholder="Search booking, customer..." />
+        <input class="search-input" placeholder="Search booking, customer, product..." />
+        <span class="search-kbd"><kbd>⌘K</kbd></span>
       </div>
+
       <div class="topbar-right">
         <div class="notif-wrap">
           <button type="button" class="icon-btn" aria-label="Notifications" (click)="notifOpen = !notifOpen">
             <i class="bi bi-bell"></i>
             @if (unreadCount()) {
-              <span class="notif-badge">{{ unreadCount() }}</span>
+              <span class="notif-badge"></span>
             }
           </button>
+
           @if (notifOpen) {
-            <div class="notif-panel ui-card">
-              <h4>Notifications</h4>
+            <div class="notif-panel ui-card slide-up">
+              <div class="notif-header">
+                <strong>Notifications</strong>
+                @if (unreadCount()) {
+                  <span class="unread-pill">{{ unreadCount() }} new</span>
+                }
+              </div>
               @if (!notifications.length) {
-                <p class="empty">No notifications</p>
+                <div class="notif-empty">
+                  <i class="bi bi-bell-slash"></i>
+                  <p>No notifications yet</p>
+                </div>
               }
               @for (n of notifications; track n.notificationID) {
                 <div class="notif-item" [class.unread]="!n.isRead" (click)="markRead(n)">
-                  <strong>{{ n.title }}</strong>
-                  <p>{{ n.message }}</p>
+                  <div class="notif-icon"><i class="bi bi-info-circle-fill"></i></div>
+                  <div class="notif-body">
+                    <strong>{{ n.title }}</strong>
+                    <p>{{ n.message }}</p>
+                  </div>
                 </div>
               }
             </div>
           }
         </div>
-        <button type="button" class="icon-btn" aria-label="Messages">
-          <i class="bi bi-chat-dots"></i>
-        </button>
+
         <div class="user-pill">
-          <span class="avatar">{{ auth.currentUser()?.fullName?.charAt(0) || 'A' }}</span>
+          <div class="avatar-wrap">
+            <span class="avatar">{{ auth.currentUser()?.fullName?.charAt(0) || 'A' }}</span>
+            <span class="status-dot"></span>
+          </div>
           <div class="user-meta">
-            <strong>{{ auth.currentUser()?.fullName || 'Admin' }}</strong>
-            <small>{{ auth.currentUser()?.roleName }}</small>
-            <small class="company-line">{{ auth.currentUser()?.companyName }}</small>
-            @if (auth.currentUser()?.branchName) {
-              <small class="company-line">{{ auth.currentUser()?.branchName }}</small>
-            }
+            <div class="user-name-row">
+              <strong>{{ auth.currentUser()?.fullName || 'Admin' }}</strong>
+              <span class="role-badge">{{ auth.currentUser()?.roleName || 'Admin' }}</span>
+            </div>
+            <span class="company-line">
+              <i class="bi bi-building"></i> {{ auth.currentUser()?.companyName }}
+              @if (auth.currentUser()?.branchName) {
+                <span>· {{ auth.currentUser()?.branchName }}</span>
+              }
+            </span>
           </div>
         </div>
       </div>
@@ -174,8 +209,11 @@
     </main>
 
     <footer class="footer">
-      <span>© 2026 Kids Fashion Rental Wear. All rights reserved.</span>
-      <span class="footer-dev">Designed for premium rental management</span>
+      <div class="footer-left">
+        <span class="footer-brand">👑 Kids Fashion Rental Wear</span>
+        <span>© 2026 All rights reserved.</span>
+      </div>
+      <span class="footer-dev"><i class="bi bi-shield-check"></i> Premium Rental Management Solution</span>
     </footer>
   </div>
 </div>

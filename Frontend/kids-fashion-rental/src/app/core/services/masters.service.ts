@@ -35,7 +35,7 @@ export class ColorApiService {
 @Injectable({ providedIn: 'root' })
 export class ProductApiService {
   constructor(private api: ApiService) {}
-  list(companyId?: number) { return this.api.get<any>('/product', { companyId }); }
+  list(companyId?: number, branchId?: number) { return this.api.get<any>('/product', { companyId, branchId }); }
   getById(id: number) { return this.api.get<any>(`/product/${id}`); }
   getByCode(code: string) { return this.api.get<any>(`/product/code/${code}`); }
   create(body: unknown) { return this.api.post<any>('/product', body); }

@@ -24,6 +24,7 @@ public class UserModel
     public string DataScope { get; set; } = string.Empty;
     public string? CompanyName { get; set; }
     public string? BranchName { get; set; }
+    public string? CompanyLogo { get; set; }
 }
 
 public class LoginResponse

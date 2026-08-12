@@ -22,6 +22,7 @@ export class DashboardComponent implements OnInit {
   counts: Record<string, number> = {};
   dashboardTitle = 'Dashboard';
   dashboardSubtitle = 'Welcome back';
+  todayDate = new Date();
   topProducts: { productName: string; total: number }[] = [];
   todayDeliveries: Record<string, unknown>[] = [];
   todayReturns: Record<string, unknown>[] = [];
@@ -34,15 +35,15 @@ export class DashboardComponent implements OnInit {
       datasets: [{
         data: [],
         label: 'Income',
-        borderColor: '#3B82F6',
-        backgroundColor: 'rgba(59,130,246,0.08)',
+        borderColor: '#6366F1',
+        backgroundColor: 'rgba(99, 102, 241, 0.12)',
         fill: true,
         tension: 0.4,
-        borderWidth: 2.5,
-        pointRadius: 5,
+        borderWidth: 3,
+        pointRadius: 6,
         pointBackgroundColor: '#fff',
-        pointBorderColor: '#3B82F6',
-        pointBorderWidth: 2
+        pointBorderColor: '#6366F1',
+        pointBorderWidth: 3
       }]
     },
     options: {

@@ -1,4 +1,4 @@
-@import '../master-crud/master-crud.component.scss';
+@use '../master-crud/master-crud.component' as *;
 
 .app-modal-panel.modal-lg {
   width: 98vw !important;
@@ -95,10 +95,18 @@
   gap: 1rem;
   padding: 0.85rem 1.25rem;
 
+  .filter-controls {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    flex: 1;
+    max-width: 700px;
+  }
+
   .search-box {
     position: relative;
     flex: 1;
-    max-width: 480px;
+    max-width: 440px;
 
     i {
       position: absolute;
@@ -122,6 +130,54 @@
       }
     }
   }
+
+  .branch-filter-box {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+
+    i {
+      position: absolute;
+      left: 0.75rem;
+      color: #6366f1;
+      font-size: 0.95rem;
+      pointer-events: none;
+    }
+
+    select {
+      padding: 0.55rem 1rem 0.55rem 2.2rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #334155;
+      background: #f8fafc;
+      cursor: pointer;
+      min-width: 170px;
+
+      &:focus {
+        outline: none;
+        border-color: var(--primary);
+        box-shadow: 0 0 0 3px rgba(108, 59, 255, 0.12);
+      }
+    }
+  }
+}
+
+.branch-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: #eef2ff;
+  color: #4338ca;
+  border: 1px solid #c7d2fe;
+  font-size: 0.76rem;
+  font-weight: 600;
+  padding: 0.18rem 0.55rem;
+  border-radius: 6px;
+  white-space: nowrap;
+
+  i { font-size: 0.8rem; }
 }
 
 .view-mode-tabs {
@@ -201,19 +257,48 @@
 }
 
 .sizes-chips-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.3rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: nowrap;
+  max-width: 260px;
 }
 
 .size-chip-sm {
   background: #f1f5f9;
   border: 1px solid #cbd5e1;
   color: #334155;
-  font-size: 0.72rem;
+  font-size: 0.74rem;
   font-weight: 600;
-  padding: 0.15rem 0.45rem;
+  padding: 0.18rem 0.5rem;
   border-radius: 6px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.size-more-pill {
+  background: linear-gradient(135deg, #e0e7ff 0%, #ddd6fe 100%);
+  border: 1px solid #c7d2fe;
+  color: #4338ca;
+  font-size: 0.74rem;
+  font-weight: 700;
+  padding: 0.18rem 0.55rem;
+  border-radius: 6px;
+  white-space: nowrap;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+
+  &:hover {
+    background: #6366f1;
+    color: #ffffff;
+    border-color: #6366f1;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.3);
+  }
 }
 
 .btn-toggle-expand {

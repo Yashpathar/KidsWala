@@ -75,6 +75,7 @@ public class AuthRepository : IAuthRepository
                     return result;
                 }
                 companyName = company.CompanyName;
+                user.CompanyLogo = company.LogoImage;
             }
             else if (scope == DataScope.Platform)
             {

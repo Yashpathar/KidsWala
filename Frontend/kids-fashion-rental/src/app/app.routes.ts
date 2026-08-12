@@ -73,6 +73,7 @@ export const routes: Routes = [
       { path: 'masters/edit-product/:id', canActivate: [menuGuard('product')], loadComponent: () => import('./pages/masters/add-product/add-product.component').then(m => m.AddProductComponent) },
       { path: 'masters/company', canActivate: [menuGuard('company')], loadComponent: () => import('./pages/masters/company-master/company-master.component').then(m => m.CompanyMasterComponent) },
       { path: 'masters/branch', canActivate: [menuGuard('branch')], loadComponent: () => import('./pages/masters/branch-master/branch-master.component').then(m => m.BranchMasterComponent) },
+      { path: 'masters/user', canActivate: [menuGuard('user')], loadComponent: () => import('./pages/masters/user-master/user-master.component').then(m => m.UserMasterComponent) },
       { path: 'masters/role-rights', canActivate: [menuGuard('roleRights')], loadComponent: () => import('./pages/masters/role-rights/role-rights.component').then(m => m.RoleRightsComponent) },
       { path: 'booking/add', canActivate: [menuGuard('bookingAdd')], loadComponent: () => import('./pages/booking/add-booking/add-booking.component').then(m => m.AddBookingComponent) },
       { path: 'booking/list', canActivate: [menuGuard('bookingList')], loadComponent: () => import('./pages/booking/booking-list/booking-list.component').then(m => m.BookingListComponent) },

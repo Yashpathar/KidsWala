@@ -3,7 +3,9 @@ import { FormsModule } from '@angular/forms';
 import { CurrencyPipe } from '@angular/common';
 import { forkJoin } from 'rxjs';
 import { ProductApiService, CategoryApiService, SizeApiService, ColorApiService } from '../../../core/services/masters.service';
+import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { AlertService } from '../../../core/services/alert.service';
 import { asArray, pickId } from '../../../core/models/api.models';
 import { environment } from '../../../../environments/environment';
 
@@ -46,9 +48,13 @@ export class ProductMasterComponent implements OnInit {
   private categoryApi = inject(CategoryApiService);
   private sizeApi = inject(SizeApiService);
   private colorApi = inject(ColorApiService);
+  private api = inject(ApiService);
+  private alert = inject(AlertService);
   auth = inject(AuthService);
 
   products: any[] = [];
+  branches: any[] = [];
+  selectedBranchId: number | null = null;
   categories: any[] = [];
   sizes: any[] = [];
   colors: any[] = [];
@@ -107,7 +113,21 @@ export class ProductMasterComponent implements OnInit {
       if (!g.productImage && p.productImage) g.productImage = p.productImage;
     }
 
-    return Array.from(map.values());
+    const groups = Array.from(map.values());
+    for (const grp of groups) {
+      grp.items.sort((a, b) => {
+        const sA = String(this.getSizeName(a)).trim();
+        const sB = String(this.getSizeName(b)).trim();
+        const numA = parseFloat(sA.replace(/[^0-9.]/g, ''));
+        const numB = parseFloat(sB.replace(/[^0-9.]/g, ''));
+        if (!isNaN(numA) && !isNaN(numB) && numA !== numB) {
+          return numA - numB;
+        }
+        return sA.localeCompare(sB, undefined, { numeric: true, sensitivity: 'base' });
+      });
+    }
+
+    return groups;
   }
 
   toggleGroup(gCode: string) {
@@ -152,6 +172,7 @@ export class ProductMasterComponent implements OnInit {
     return {
       productID: 0,
       companyID: this.auth.currentUser()?.companyID || 1,
+      branchID: this.selectedBranchId ? Number(this.selectedBranchId) : (this.auth.currentUser()?.branchID || null),
       productCode: '',
       productName: '',
       categoryID: null as number | null,
@@ -201,11 +222,17 @@ export class ProductMasterComponent implements OnInit {
   private showMsg(text: string, type: 'success' | 'error') {
     this.message = text;
     this.messageType = type;
-    if (type === 'success') setTimeout(() => { if (this.message === text) this.message = ''; }, 4000);
+    if (type === 'success') {
+      this.alert.toastSuccess(text);
+      setTimeout(() => { if (this.message === text) this.message = ''; }, 4000);
+    } else {
+      this.alert.toastError(text);
+    }
   }
 
   loadLookups() {
     const cid = this.auth.currentUser()?.companyID;
+    this.api.get<any>('/branch').subscribe(r => { if (r.success) this.branches = asArray(r.data); });
     this.categoryApi.list(cid).subscribe(r => { if (r.success) this.categories = asArray(r.data); });
     this.sizeApi.list(cid).subscribe(r => {
       if (r.success) {
@@ -220,6 +247,10 @@ export class ProductMasterComponent implements OnInit {
       }
     });
     this.colorApi.list(cid).subscribe(r => { if (r.success) this.colors = asArray(r.data); });
+  }
+
+  onBranchChange() {
+    this.load();
   }
 
   get filtered() {
@@ -274,9 +305,19 @@ export class ProductMasterComponent implements OnInit {
     return '';
   }
 
+  getBranchName(p: any): string {
+    if (p.branchName || p.BranchName) return p.branchName || p.BranchName;
+    const bid = p.branchID ?? p.BranchID;
+    if (bid && this.branches.length) {
+      const found = this.branches.find(b => (b.branchID ?? b.BranchID) === bid);
+      if (found) return found.branchName || found.BranchName || '';
+    }
+    return 'All Branches';
+  }
+
   load() {
     this.loading = true;
-    this.productApi.list(this.auth.currentUser()?.companyID).subscribe({
+    this.productApi.list(this.auth.currentUser()?.companyID, this.selectedBranchId ? Number(this.selectedBranchId) : undefined).subscribe({
       next: res => {
         this.loading = false;
         if (res.success) this.products = asArray(res.data);
@@ -311,6 +352,7 @@ export class ProductMasterComponent implements OnInit {
     this.form = {
       productID: pickId(p, 'productID', 'ProductID'),
       companyID: p.companyID ?? p.CompanyID ?? 1,
+      branchID: p.branchID ?? p.BranchID ?? null,
       productCode: p.productCode ?? '',
       productName: p.productName ?? '',
       categoryID: p.categoryID ?? p.CategoryID ?? null,
@@ -467,6 +509,7 @@ export class ProductMasterComponent implements OnInit {
     return {
       productID: Number(this.form.productID || 0),
       companyID: Number(this.auth.currentUser()?.companyID || 1),
+      branchID: this.form.branchID ? Number(this.form.branchID) : (this.selectedBranchId ? Number(this.selectedBranchId) : null),
       productCode: String(this.form.productCode).trim(),
       productName: String(this.form.productName).trim(),
       categoryID: Number(this.form.categoryID),
@@ -552,6 +595,7 @@ export class ProductMasterComponent implements OnInit {
       return {
         productID: 0,
         companyID: companyID,
+        branchID: this.form.branchID ? Number(this.form.branchID) : (this.selectedBranchId ? Number(this.selectedBranchId) : null),
         productCode: pCode,
         productName: prodName,
         categoryID: Number(catID),
@@ -597,25 +641,30 @@ export class ProductMasterComponent implements OnInit {
     });
   }
 
-  delete(p: any) {
+  async delete(p: any) {
     const id = pickId(p, 'productID', 'ProductID');
     if (!id) return;
-    if (!confirm('Delete product ' + (p.productCode || '') + '?')) return;
+    const confirmed = await this.alert.confirmDelete(
+      `Delete Product '${p.productCode || p.productName}'?`,
+      `Are you sure you want to delete product '${p.productName || p.productCode}'? This action cannot be undone.`
+    );
+    if (!confirmed) return;
 
     this.loading = true;
     this.productApi.delete(id).subscribe({
       next: res => {
         this.loading = false;
         if (res.success) {
-          this.showMsg(res.message || 'Deleted successfully', 'success');
+          this.alert.toastSuccess(res.message || 'Deleted successfully');
           this.load();
         } else {
-          this.showMsg(res.message || 'Delete failed', 'error');
+          const msg = res.message || 'Delete failed: Product is associated with existing customer bookings.';
+          this.alert.error('Cannot Delete Product', msg);
         }
       },
       error: () => {
         this.loading = false;
-        this.showMsg('Delete request failed', 'error');
+        this.alert.error('Delete Failed', 'An error occurred while attempting to delete product.');
       }
     });
   }

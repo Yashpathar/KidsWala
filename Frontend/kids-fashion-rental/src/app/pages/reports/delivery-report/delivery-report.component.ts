@@ -25,7 +25,8 @@ export interface DeliveryReportRow {
 })
 export class DeliveryReportComponent implements OnInit {
   rows: DeliveryReportRow[] = [];
-  reportDate = new Date().toISOString().substring(0, 10);
+  fromDate = new Date().toISOString().substring(0, 10);
+  toDate = new Date().toISOString().substring(0, 10);
   loading = false;
 
   constructor(private api: ApiService, private auth: AuthService) {}
@@ -36,7 +37,8 @@ export class DeliveryReportComponent implements OnInit {
     this.loading = true;
     this.api.get<unknown>('/report/today-delivery', {
       companyId: this.auth.currentUser()?.companyID,
-      reportDate: this.reportDate
+      fromDate: this.fromDate,
+      toDate: this.toDate
     }).subscribe({
       next: r => {
         this.loading = false;

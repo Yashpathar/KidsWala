@@ -1,10 +1,17 @@
 <div class="page-header flex-between">
   <div>
-    <h2>Today Delivery Report</h2>
-    <p class="breadcrumb">REPORTS / <strong>Today Delivery</strong></p>
+    <h2>Delivery Report</h2>
+    <p class="breadcrumb">REPORTS / <strong>Delivery Report</strong></p>
   </div>
-  <div class="actions no-print">
-    <input type="date" [(ngModel)]="reportDate" (change)="load()" />
+  <div class="actions no-print flex-gap align-center">
+    <div class="date-group">
+      <label>From:</label>
+      <input type="date" [(ngModel)]="fromDate" (change)="load()" />
+    </div>
+    <div class="date-group">
+      <label>To:</label>
+      <input type="date" [(ngModel)]="toDate" (change)="load()" />
+    </div>
     <button type="button" class="btn-primary" (click)="load()" [disabled]="loading">Refresh</button>
     <button type="button" class="btn-outline" (click)="print()">Print</button>
   </div>

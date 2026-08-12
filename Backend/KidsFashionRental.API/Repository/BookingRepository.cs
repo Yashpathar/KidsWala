@@ -8,6 +8,9 @@ namespace KidsFashionRental.API.Repository;
 
 public class BookingRepository : IBookingRepository
 {
+    private static DateTime? CleanDate(DateTime? dt) =>
+        dt.HasValue && dt.Value.Year >= 1753 && dt.Value.Year <= 9999 ? dt.Value : null;
+
     /// <summary>SQL OPENJSON WITH clause expects PascalCase keys matching C# property names.</summary>
     private static readonly JsonSerializerOptions SqlJsonOptions = new()
     {
@@ -24,11 +27,17 @@ public class BookingRepository : IBookingRepository
         var result = new ApiResult();
         try
         {
+            var reportDate = CleanDate(filter.ReportDate);
+            var fromDate = CleanDate(filter.FromDate) ?? reportDate;
+            var toDate = CleanDate(filter.ToDate) ?? reportDate;
+
             var p = new DynamicParameters();
             p.Add("CompanyID", filter.CompanyID);
             p.Add("BranchID", filter.BranchID);
             p.Add("Search", filter.Search);
             p.Add("Status", filter.Status);
+            p.Add("FromDate", fromDate);
+            p.Add("ToDate", toDate);
             p.Add("FilterUserID", filter.FilterUserID);
             var data = await BaseDataProvider.QueryAsync<BookingListModel>("SP_GetAllBookings", p);
             result.Success = true;

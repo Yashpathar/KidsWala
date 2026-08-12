@@ -7,9 +7,9 @@ public interface IMasterService
 {
     Task<ApiResult> GetProductsAsync(int? companyId);
     Task<ApiResult> GetProductByCodeAsync(string productCode);
-    Task<ApiResult> GetCustomersAsync(int? companyId);
+    Task<ApiResult> GetCustomersAsync(int? companyId, int? branchId = null);
     Task<ApiResult> InsertCustomerAsync(CustomerModel model);
-    Task<ApiResult> GetCustomerByMobileAsync(string mobile, int? companyId);
+    Task<ApiResult> GetCustomerByMobileAsync(string mobile, int? companyId, int? branchId = null);
     Task<ApiResult> GetRolesAsync();
     Task<ApiResult> GetRoleRightsAsync(int roleId);
     Task<ApiResult> SaveRoleRightsAsync(RoleRightsSaveModel model);

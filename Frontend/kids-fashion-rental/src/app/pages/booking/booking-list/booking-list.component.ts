@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { BookingReturnService } from '../../../core/services/booking-return.service';
+import { AlertService } from '../../../core/services/alert.service';
 import { computeReturnRefund } from '../../../core/utils/booking-return.util';
 import {
   asArray,
@@ -43,10 +44,13 @@ export class BookingListComponent implements OnInit {
   private api = inject(ApiService);
   private auth = inject(AuthService);
   private returnService = inject(BookingReturnService);
+  private alert = inject(AlertService);
 
   bookings: BookingRow[] = [];
   search = '';
   status = '';
+  fromDate = new Date().toISOString().substring(0, 10);
+  toDate = new Date().toISOString().substring(0, 10);
   loading = false;
   message = '';
   messageType: 'success' | 'error' = 'success';
@@ -98,7 +102,9 @@ export class BookingListComponent implements OnInit {
     this.api.get<unknown>('/booking', {
       companyId: this.auth.currentUser()?.companyID,
       search: this.search,
-      status: this.status || undefined
+      status: this.status || undefined,
+      fromDate: this.fromDate || undefined,
+      toDate: this.toDate || undefined
     }).subscribe({
       next: r => {
         this.loading = false;
@@ -114,6 +120,12 @@ export class BookingListComponent implements OnInit {
         this.showMsg('Failed to load bookings', 'error');
       }
     });
+  }
+
+  clearDates() {
+    this.fromDate = '';
+    this.toDate = '';
+    this.load();
   }
 
   private mapRow(row: unknown): BookingRow {
@@ -332,23 +344,28 @@ export class BookingListComponent implements OnInit {
       });
   }
 
-  delete(row: BookingRow) {
+  async delete(row: BookingRow) {
     if (!row.bookingID) return;
-    if (!confirm('Delete this booking?')) return;
+    const confirmed = await this.alert.confirmDelete(
+      `Delete Booking '${row.bookingNo}'?`,
+      `Are you sure you want to delete booking ${row.bookingNo} for ${row.customerName}? This action cannot be undone.`
+    );
+    if (!confirmed) return;
     this.loading = true;
     this.api.delete(`/booking/${row.bookingID}`).subscribe({
       next: r => {
         this.loading = false;
         if (r.success) {
-          this.showMsg(r.message || 'Deleted successfully', 'success');
+          this.alert.toastSuccess(r.message || 'Deleted successfully');
           this.load();
         } else {
-          this.showMsg(r.message || 'Delete failed', 'error');
+          const msg = r.message || 'Delete failed: Booking is currently active or delivered.';
+          this.alert.error('Cannot Delete Booking', msg);
         }
       },
       error: () => {
         this.loading = false;
-        this.showMsg('Delete request failed', 'error');
+        this.alert.error('Delete Failed', 'An error occurred while attempting to delete booking.');
       }
     });
   }
@@ -368,7 +385,12 @@ export class BookingListComponent implements OnInit {
   private showMsg(text: string, type: 'success' | 'error') {
     this.message = text;
     this.messageType = type;
-    if (type === 'success') setTimeout(() => { if (this.message === text) this.message = ''; }, 4000);
+    if (type === 'success') {
+      this.alert.toastSuccess(text);
+      setTimeout(() => { if (this.message === text) this.message = ''; }, 4000);
+    } else {
+      this.alert.toastError(text);
+    }
   }
 
   statusClass(s: string) {

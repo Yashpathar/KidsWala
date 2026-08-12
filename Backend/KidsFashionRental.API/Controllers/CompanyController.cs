@@ -38,4 +38,11 @@ public class CompanyController : ControllerBase
         if (!IsSuperAdmin(User)) return Ok(ApiResult.Fail("Super Admin only"));
         return Ok(await _repo.UpdateAsync(model));
     }
+
+    [HttpDelete("{id:int}")]
+    public async Task<IActionResult> Delete(int id)
+    {
+        if (!IsSuperAdmin(User)) return Ok(ApiResult.Fail("Super Admin only"));
+        return Ok(await _repo.DeleteAsync(id));
+    }
 }

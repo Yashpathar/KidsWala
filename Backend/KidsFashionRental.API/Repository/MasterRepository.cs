@@ -40,10 +40,11 @@ public class MasterRepository : IMasterRepository
         return result;
     }
 
-    public Task<ApiResult> GetCustomersAsync(int? companyId)
+    public Task<ApiResult> GetCustomersAsync(int? companyId, int? branchId = null)
     {
         var p = new DynamicParameters();
         p.Add("CompanyID", companyId);
+        p.Add("BranchID", branchId);
         return RepositoryHelper.QueryListAsync<CustomerModel>("SP_GetAllCustomers", p);
     }
 
@@ -54,6 +55,7 @@ public class MasterRepository : IMasterRepository
         {
             var p = new DynamicParameters();
             p.Add("CompanyID", model.CompanyID);
+            p.Add("BranchID", model.BranchID);
             p.Add("FullName", model.FullName);
             p.Add("ContactNo1", model.ContactNo1);
             p.Add("ContactNo2", model.ContactNo2);
@@ -69,13 +71,14 @@ public class MasterRepository : IMasterRepository
         return result;
     }
 
-    public async Task<ApiResult> GetCustomerByMobileAsync(string mobile, int? companyId)
+    public async Task<ApiResult> GetCustomerByMobileAsync(string mobile, int? companyId, int? branchId = null)
     {
         var result = new ApiResult();
         try
         {
             var p = new DynamicParameters();
             p.Add("CompanyID", companyId);
+            p.Add("BranchID", branchId);
             p.Add("MobileNo", mobile);
             var data = await BaseDataProvider.QuerySingleAsync<CustomerModel>("SP_GetCustomerByMobile", p);
             result.Success = data != null;
@@ -101,6 +104,19 @@ public class MasterRepository : IMasterRepository
         var result = new ApiResult();
         try
         {
+            // Validate incoming rights to prevent DB inserts with null MenuKey
+            if (model.Rights == null || model.Rights.Count == 0)
+            {
+                result.Message = "No rights provided";
+                return result;
+            }
+
+            if (model.Rights.Any(r => string.IsNullOrWhiteSpace(r.MenuKey)))
+            {
+                result.Message = "Invalid rights: MenuKey is required for each right";
+                return result;
+            }
+
             var p = new DynamicParameters();
             p.Add("RoleID", model.RoleID);
             p.Add("RightsJson", JsonSerializer.Serialize(model.Rights, new JsonSerializerOptions

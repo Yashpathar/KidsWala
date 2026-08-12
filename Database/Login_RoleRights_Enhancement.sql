@@ -33,7 +33,7 @@ BEGIN
     FROM (VALUES
         ('dashboard'),('category'),('size'),('color'),('product'),('company'),('roleRights'),
         ('bookingAdd'),('bookingList'),('reportDelivery'),('reportReturn'),('reportBooking'),('reportPayment')
-    ) v(MenuKey) m;
+    ) AS m(MenuKey);
     SELECT 1 AS Success, 'Role added' AS Message, @NewRoleID AS ID;
 END
 GO
@@ -69,7 +69,7 @@ GO
 CREATE OR ALTER PROCEDURE SP_GetCompanyById @CompanyID INT
 AS
 BEGIN
-    SELECT CompanyID, CompanyName, CompanyCode, BusinessType, Address, MobileNo, Email, GSTNo, IsActive
+    SELECT CompanyID, CompanyName, CompanyCode, BusinessType, Address, MobileNo, Email, GSTNo, LogoImage, IsActive
     FROM tblCompany WHERE CompanyID = @CompanyID AND IsDeleted = 0;
 END
 GO

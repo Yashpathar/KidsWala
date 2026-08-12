@@ -13,6 +13,7 @@ export const APP_MENUS: AppMenuDef[] = [
   { key: 'product', label: 'Product Master', route: '/masters/product' },
   { key: 'company', label: 'Company Master', route: '/masters/company' },
   { key: 'branch', label: 'Branch Master', route: '/masters/branch' },
+  { key: 'user', label: 'User Master', route: '/masters/user' },
   { key: 'roleRights', label: 'Role Rights', route: '/masters/role-rights' },
   { key: 'bookingAdd', label: 'Add Booking', route: '/booking/add' },
   { key: 'bookingList', label: 'Booking List', route: '/booking/list' },

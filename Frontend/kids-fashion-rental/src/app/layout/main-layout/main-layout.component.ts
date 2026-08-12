@@ -4,6 +4,8 @@ import { AuthService } from '../../core/services/auth.service';
 import { ApiService } from '../../core/services/api.service';
 import { asArray, normalizeRow, pickField, pickId } from '../../core/models/api.models';
 
+import { getImageUrl, handleImageError } from '../../core/utils/image.utils';
+
 @Component({
   selector: 'app-main-layout',
   standalone: true,
@@ -13,10 +15,19 @@ import { asArray, normalizeRow, pickField, pickId } from '../../core/models/api.
 })
 export class MainLayoutComponent implements OnInit {
   sidebarOpen = true;
+  mobileSidebarOpen = false;
   auth = inject(AuthService);
   private api = inject(ApiService);
   notifications: { notificationID: number; title: string; message: string; isRead: boolean }[] = [];
   notifOpen = false;
+
+  imageUrl(path?: string): string {
+    return getImageUrl(path, 'logo');
+  }
+
+  onImgError(event: Event) {
+    handleImageError(event, 'logo');
+  }
 
   ngOnInit() {
     this.loadNotifications();
@@ -52,5 +63,15 @@ export class MainLayoutComponent implements OnInit {
     this.api.post(`/notification/${n.notificationID}/read`, {}).subscribe(() => this.loadNotifications());
   }
 
-  toggleSidebar() { this.sidebarOpen = !this.sidebarOpen; }
+  toggleSidebar() {
+    if (window.innerWidth <= 992) {
+      this.mobileSidebarOpen = !this.mobileSidebarOpen;
+    } else {
+      this.sidebarOpen = !this.sidebarOpen;
+    }
+  }
+
+  closeMobileSidebar() {
+    this.mobileSidebarOpen = false;
+  }
 }

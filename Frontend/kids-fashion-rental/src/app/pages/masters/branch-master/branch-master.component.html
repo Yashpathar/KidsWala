@@ -1,20 +1,29 @@
 <div class="page-header flex-between">
   <div><h2>Branch Master</h2><p class="breadcrumb">Company → Branch setup</p></div>
-  <button type="button" class="btn-primary" (click)="openAdd()"><i class="bi bi-plus-lg"></i> Add Branch</button>
+  @if (auth.canCreateMenu('branch')) {
+    <button type="button" class="btn-primary" (click)="openAdd()"><i class="bi bi-plus-lg"></i> Add Branch</button>
+  }
 </div>
 @if (message) { <div class="alert-success">{{ message }}</div> }
 <div class="ui-card table-wrap">
   <table class="data-table">
     <thead><tr><th>Company</th><th>Branch</th><th>Code</th><th>Mobile</th><th>Email</th><th></th></tr></thead>
     <tbody>
-      @for (b of rows; track b.branchID) {
+      @for (b of rows; track b.branchID || b.BranchID) {
         <tr>
-          <td>{{ b.companyName }}</td>
-          <td><strong>{{ b.branchName }}</strong></td>
-          <td>{{ b.branchCode }}</td>
+          <td>{{ b.companyName ?? b.CompanyName }}</td>
+          <td><strong>{{ b.branchName ?? b.BranchName }}</strong></td>
+          <td>{{ b.branchCode ?? b.BranchCode }}</td>
           <td>{{ b.mobileNo }}</td>
           <td>{{ b.email }}</td>
-          <td><button type="button" class="btn-sm" (click)="openEdit(b)">Edit</button></td>
+          <td class="text-end">
+            @if (auth.canUpdateMenu('branch')) {
+              <button type="button" class="btn-sm" (click)="openEdit(b)"><i class="bi bi-pencil"></i> Edit</button>
+            }
+            @if (auth.canDeleteMenu('branch')) {
+              <button type="button" class="btn-sm danger ms-1" (click)="deleteBranch(b)"><i class="bi bi-trash"></i> Delete</button>
+            }
+          </td>
         </tr>
       }
     </tbody>

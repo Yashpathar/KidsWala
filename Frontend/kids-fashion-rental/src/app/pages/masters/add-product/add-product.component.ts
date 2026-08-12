@@ -1,10 +1,12 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule, CurrencyPipe } from '@angular/common';
+import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { forkJoin } from 'rxjs';
 import { ProductApiService, CategoryApiService, SizeApiService, ColorApiService } from '../../../core/services/masters.service';
+import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
+import { AlertService } from '../../../core/services/alert.service';
 import { asArray, pickId } from '../../../core/models/api.models';
 import { environment } from '../../../../environments/environment';
 
@@ -21,7 +23,7 @@ export interface BatchItem {
 @Component({
   selector: 'app-add-product',
   standalone: true,
-  imports: [CommonModule, FormsModule, CurrencyPipe, RouterLink],
+  imports: [CommonModule, FormsModule, RouterLink],
   templateUrl: './add-product.component.html',
   styleUrl: './add-product.component.scss'
 })
@@ -32,6 +34,8 @@ export class AddProductComponent implements OnInit {
   private categoryApi = inject(CategoryApiService);
   private sizeApi = inject(SizeApiService);
   private colorApi = inject(ColorApiService);
+  private api = inject(ApiService);
+  private alert = inject(AlertService);
   auth = inject(AuthService);
 
   productId: number = 0;
@@ -42,6 +46,7 @@ export class AddProductComponent implements OnInit {
   categories: any[] = [];
   sizes: any[] = [];
   colors: any[] = [];
+  branches: any[] = [];
 
   message: string = '';
   messageType: 'success' | 'error' = 'success';
@@ -88,6 +93,7 @@ export class AddProductComponent implements OnInit {
     return {
       productID: 0,
       companyID: this.auth.currentUser()?.companyID || 1,
+      branchID: this.auth.currentUser()?.branchID || null,
       productCode: '',
       productName: '',
       categoryID: null as number | null,
@@ -152,13 +158,25 @@ export class AddProductComponent implements OnInit {
     this.message = text;
     this.messageType = type;
     if (type === 'success') {
+      this.alert.toastSuccess(text);
       setTimeout(() => { if (this.message === text) this.message = ''; }, 4000);
+    } else {
+      this.alert.toastError(text);
     }
   }
 
   loadLookups() {
     const cid = this.auth.currentUser()?.companyID;
-    this.categoryApi.list(cid).subscribe(r => { if (r.success) this.categories = asArray(r.data); });
+    this.api.get<any>('/branch').subscribe(r => { if (r.success) this.branches = asArray(r.data); });
+    this.categoryApi.list(cid).subscribe(r => {
+      if (r.success) {
+        this.categories = asArray(r.data);
+        if (this.categories.length > 0) {
+          if (!this.form.categoryID) this.form.categoryID = this.categories[0].categoryID;
+          if (!this.batchForm.categoryID) this.batchForm.categoryID = this.categories[0].categoryID;
+        }
+      }
+    });
     this.sizeApi.list(cid).subscribe(r => {
       if (r.success) {
         this.sizes = asArray(r.data).sort((a: any, b: any) => {
@@ -171,7 +189,52 @@ export class AddProductComponent implements OnInit {
         });
       }
     });
-    this.colorApi.list(cid).subscribe(r => { if (r.success) this.colors = asArray(r.data); });
+    this.colorApi.list(cid).subscribe(r => {
+      if (r.success) {
+        this.colors = asArray(r.data);
+        if (this.colors.length > 0) {
+          if (!this.form.colorID) this.form.colorID = this.colors[0].colorID;
+          if (!this.batchForm.colorID) this.batchForm.colorID = this.colors[0].colorID;
+        }
+      }
+    });
+    // Fetch products to compute next available prefix automatically
+    this.productApi.list(cid, this.auth.currentUser()?.branchID).subscribe((r: any) => {
+      if (r && r.success && r.data) {
+        const prods = asArray(r.data);
+        this.computeNextCodePrefix(prods);
+      }
+    });
+  }
+
+  computeNextCodePrefix(existingProducts: any[]) {
+    let maxNum = 13;
+    existingProducts.forEach(p => {
+      const code = p.productCode || p.ProductCode || '';
+      const match = code.match(/BL-(\d+)/i);
+      if (match && match[1]) {
+        const val = parseInt(match[1], 10);
+        if (!isNaN(val) && val > maxNum) {
+          maxNum = val;
+        }
+      }
+    });
+    this.batchForm.codePrefix = `BL-${maxNum + 1}`;
+    this.autoGenerateBatchCodes();
+  }
+
+  generateNextAutoPrefix() {
+    let currentPrefix = this.batchForm.codePrefix || 'BL-12';
+    const match = currentPrefix.match(/(.*?)-(\d+)$/);
+    if (match) {
+      const prefixText = match[1];
+      const nextVal = parseInt(match[2], 10) + 1;
+      this.batchForm.codePrefix = `${prefixText}-${nextVal}`;
+    } else {
+      this.batchForm.codePrefix = `${currentPrefix}-01`;
+    }
+    this.autoGenerateBatchCodes();
+    this.showMsg(`Generated Code Prefix: ${this.batchForm.codePrefix}`, 'success');
   }
 
   loadProductDetails(id: number) {
@@ -184,6 +247,7 @@ export class AddProductComponent implements OnInit {
           this.form = {
             productID: pickId(p, 'productID', 'ProductID'),
             companyID: p.companyID ?? p.CompanyID ?? 1,
+            branchID: p.branchID ?? p.BranchID ?? null,
             productCode: p.productCode ?? p.ProductCode ?? '',
             productName: p.productName ?? p.ProductName ?? '',
             categoryID: p.categoryID ?? p.CategoryID ?? null,
@@ -348,6 +412,7 @@ export class AddProductComponent implements OnInit {
     return {
       productID: Number(this.form.productID || 0),
       companyID: Number(this.auth.currentUser()?.companyID || 1),
+      branchID: this.form.branchID ? Number(this.form.branchID) : (this.auth.currentUser()?.branchID || null),
       productCode: String(this.form.productCode).trim(),
       productName: String(this.form.productName).trim(),
       categoryID: Number(this.form.categoryID),
@@ -432,6 +497,7 @@ export class AddProductComponent implements OnInit {
       return {
         productID: 0,
         companyID: companyID,
+        branchID: this.form.branchID ? Number(this.form.branchID) : (this.auth.currentUser()?.branchID || null),
         productCode: pCode,
         productName: prodName,
         categoryID: Number(catID),
@@ -462,16 +528,23 @@ export class AddProductComponent implements OnInit {
       next: (results) => {
         this.saving = false;
         const successCount = results.filter(r => r.success).length;
-        if (successCount > 0) {
-          this.showMsg(`Successfully created ${successCount} products!`, 'success');
+        const failedResults = results.filter(r => !r.success);
+
+        if (successCount > 0 && failedResults.length === 0) {
+          this.showMsg(`Successfully created all ${successCount} batch products!`, 'success');
           setTimeout(() => this.router.navigate(['/masters/product']), 1000);
+        } else if (successCount > 0) {
+          const firstErr = failedResults[0]?.message || 'Some items failed';
+          this.showMsg(`Created ${successCount} products. ${failedResults.length} failed (${firstErr})`, 'error');
         } else {
-          this.showMsg('Batch creation failed', 'error');
+          const firstErr = failedResults[0]?.message || 'Product code already exists in database. Please click Auto-Code to generate new codes.';
+          this.showMsg(`Batch creation failed: ${firstErr}`, 'error');
         }
       },
-      error: () => {
+      error: (err) => {
         this.saving = false;
-        this.showMsg('Failed to save batch products', 'error');
+        const msg = err?.error?.message || err?.message || 'Failed to save batch products';
+        this.showMsg(`Batch creation error: ${msg}`, 'error');
       }
     });
   }

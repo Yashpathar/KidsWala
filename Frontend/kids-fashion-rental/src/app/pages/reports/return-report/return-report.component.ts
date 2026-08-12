@@ -4,6 +4,7 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { BookingReturnService } from '../../../core/services/booking-return.service';
+import { AlertService } from '../../../core/services/alert.service';
 import { computeReturnRefund } from '../../../core/utils/booking-return.util';
 import { normalizeRow, normalizeRows, pickField, pickId } from '../../../core/models/api.models';
 
@@ -35,9 +36,11 @@ export class ReturnReportComponent implements OnInit {
   private api = inject(ApiService);
   private auth = inject(AuthService);
   private returnService = inject(BookingReturnService);
+  private alert = inject(AlertService);
 
   rows: ReturnReportRow[] = [];
-  reportDate = new Date().toISOString().substring(0, 10);
+  fromDate = new Date().toISOString().substring(0, 10);
+  toDate = new Date().toISOString().substring(0, 10);
   loading = false;
   message = '';
   messageType: 'success' | 'error' = 'success';
@@ -79,7 +82,8 @@ export class ReturnReportComponent implements OnInit {
     this.loading = true;
     this.api.get<unknown>('/report/today-return', {
       companyId: this.auth.currentUser()?.companyID,
-      reportDate: this.reportDate
+      fromDate: this.fromDate,
+      toDate: this.toDate
     }).subscribe({
       next: r => {
         this.loading = false;
@@ -238,5 +242,11 @@ export class ReturnReportComponent implements OnInit {
   private showMsg(text: string, type: 'success' | 'error') {
     this.message = text;
     this.messageType = type;
+    if (type === 'success') {
+      this.alert.toastSuccess(text);
+      setTimeout(() => { if (this.message === text) this.message = ''; }, 4000);
+    } else {
+      this.alert.toastError(text);
+    }
   }
 }

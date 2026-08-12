@@ -7,10 +7,11 @@ namespace KidsFashionRental.API.Repository;
 
 public class ProductRepository : IProductRepository
 {
-    public async Task<ApiResult> GetAllAsync(int? companyId)
+    public async Task<ApiResult> GetAllAsync(int? companyId, int? branchId = null)
     {
         var p = new DynamicParameters();
         p.Add("CompanyID", companyId);
+        p.Add("BranchID", branchId);
         return await RepositoryHelper.QueryListAsync<ProductMasterModel>("SP_GetAllProducts", p);
     }
 
@@ -73,6 +74,7 @@ public class ProductRepository : IProductRepository
 
     private static void AddProductFields(DynamicParameters p, ProductMasterModel model)
     {
+        p.Add("BranchID", model.BranchID);
         p.Add("ProductCode", model.ProductCode);
         p.Add("ProductName", model.ProductName);
         p.Add("CategoryID", model.CategoryID);

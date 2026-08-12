@@ -27,20 +27,33 @@ public class MasterController : ControllerBase
         => Ok(await _service.GetProductByCodeAsync(code));
 
     [HttpGet("customers")]
-    public async Task<IActionResult> GetCustomers([FromQuery] int? companyId)
-        => Ok(await _service.GetCustomersAsync(companyId));
+    public async Task<IActionResult> GetCustomers([FromQuery] int? companyId, [FromQuery] int? branchId)
+    {
+        var cid = ControllerHelper.GetCompanyId(User, companyId);
+        var bid = ControllerHelper.GetBranchId(User, branchId);
+        return Ok(await _service.GetCustomersAsync(cid > 0 ? cid : null, bid > 0 ? bid : null));
+    }
 
     [HttpPost("customers")]
     public async Task<IActionResult> InsertCustomer([FromBody] CustomerModel model)
     {
         if (model.CompanyID <= 0)
             model.CompanyID = ControllerHelper.GetCompanyId(User);
+        if (model.BranchID is null or <= 0)
+        {
+            var bId = ControllerHelper.GetBranchId(User);
+            if (bId > 0) model.BranchID = bId;
+        }
         return Ok(await _service.InsertCustomerAsync(model));
     }
 
     [HttpGet("customers/by-mobile")]
-    public async Task<IActionResult> GetCustomerByMobile([FromQuery] string mobile, [FromQuery] int? companyId)
-        => Ok(await _service.GetCustomerByMobileAsync(mobile, companyId ?? ControllerHelper.GetCompanyId(User)));
+    public async Task<IActionResult> GetCustomerByMobile([FromQuery] string mobile, [FromQuery] int? companyId, [FromQuery] int? branchId)
+    {
+        var cid = ControllerHelper.GetCompanyId(User, companyId);
+        var bid = ControllerHelper.GetBranchId(User, branchId);
+        return Ok(await _service.GetCustomerByMobileAsync(mobile, cid > 0 ? cid : null, bid > 0 ? bid : null));
+    }
 
     [HttpGet("roles")]
     public async Task<IActionResult> GetRoles()

@@ -21,14 +21,14 @@ public class DashboardController : ControllerBase
     }
 
     [HttpGet("counts")]
-    public async Task<IActionResult> GetCounts([FromQuery] int? companyId)
-        => Ok(await _service.GetCountsAsync(BuildFilter(companyId)));
+    public async Task<IActionResult> GetCounts([FromQuery] int? companyId, [FromQuery] int? branchId)
+        => Ok(await _service.GetCountsAsync(BuildFilter(companyId, branchId)));
 
     [HttpGet("charts")]
-    public async Task<IActionResult> GetCharts([FromQuery] int? companyId)
-        => Ok(await _service.GetChartsAsync(BuildFilter(companyId)));
+    public async Task<IActionResult> GetCharts([FromQuery] int? companyId, [FromQuery] int? branchId)
+        => Ok(await _service.GetChartsAsync(BuildFilter(companyId, branchId)));
 
     [HttpGet("summary")]
-    public async Task<IActionResult> GetSummary([FromQuery] int? companyId)
-        => Ok(await _service.GetSummaryAsync(BuildFilter(companyId)));
+    public async Task<IActionResult> GetSummary([FromQuery] int? companyId, [FromQuery] int? branchId)
+        => Ok(await _service.GetSummaryAsync(BuildFilter(companyId, branchId)));
 }

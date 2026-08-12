@@ -6,14 +6,12 @@
     <h2>{{ config.title }}</h2>
     <p class="breadcrumb">MASTERS / <strong>{{ config.title }}</strong></p>
   </div>
-  <button type="button" class="btn-primary" (click)="openAdd()" [disabled]="loading">
-    <i class="bi bi-plus-lg"></i> Add New
-  </button>
+  @if (auth.canCreateMenu(config.type)) {
+    <button type="button" class="btn-primary" (click)="openAdd()" [disabled]="loading">
+      <i class="bi bi-plus-lg"></i> Add New
+    </button>
+  }
 </div>
-
-@if (message) {
-  <div [class]="messageType === 'success' ? 'alert-success' : 'alert-error'">{{ message }}</div>
-}
 
 @if (loading && !rows.length) {
   <div class="glass-card loading-box">Loading...</div>
@@ -54,8 +52,12 @@
           }
           <td class="actions">
             <button type="button" class="btn-sm" (click)="openEdit(row, true)">View</button>
-            <button type="button" class="btn-sm" (click)="openEdit(row)">Edit</button>
-            <button type="button" class="btn-sm danger" (click)="confirmDelete(row)">Delete</button>
+            @if (auth.canUpdateMenu(config.type)) {
+              <button type="button" class="btn-sm" (click)="openEdit(row)">Edit</button>
+            }
+            @if (auth.canDeleteMenu(config.type)) {
+              <button type="button" class="btn-sm danger" (click)="confirmDelete(row)">Delete</button>
+            }
           </td>
         </tr>
       }
@@ -94,3 +96,4 @@
   </div>
 }
 }
+

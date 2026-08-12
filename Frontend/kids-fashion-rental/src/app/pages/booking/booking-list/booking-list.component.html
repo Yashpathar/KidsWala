@@ -11,7 +11,14 @@
 }
 
 <div class="ui-card filters">
-  <i class="bi bi-search"></i>
+  <div class="date-group">
+    <label>From:</label>
+    <input type="date" [(ngModel)]="fromDate" (change)="load()" />
+  </div>
+  <div class="date-group">
+    <label>To:</label>
+    <input type="date" [(ngModel)]="toDate" (change)="load()" />
+  </div>
   <input [(ngModel)]="search" placeholder="Search booking no or customer..." (keyup.enter)="load()" />
   <select [(ngModel)]="status" (change)="load()">
     <option value="">All Status</option>
@@ -22,6 +29,7 @@
     <option>Completed</option>
   </select>
   <button type="button" class="btn-primary" (click)="load()"><i class="bi bi-funnel"></i> Filter</button>
+  <button type="button" class="btn-outline" (click)="clearDates()" title="Show All Dates">All Dates</button>
 </div>
 
 <!-- Desktop table -->

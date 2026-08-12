@@ -1,8 +1,9 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
+import { AlertService } from '../../../core/services/alert.service';
 import { APP_MENUS } from '../../../core/config/menu-keys';
-import { asArray, pickId } from '../../../core/models/api.models';
+import { asArray, normalizeRow, pickField, pickId } from '../../../core/models/api.models';
 
 export interface MenuRight {
   menuKey: string;
@@ -12,25 +13,16 @@ export interface MenuRight {
   isDelete: boolean;
 }
 
-
-
 @Component({
-
   selector: 'app-role-rights',
-
   standalone: true,
-
   imports: [FormsModule],
-
   templateUrl: './role-rights.component.html',
-
   styleUrl: './role-rights.component.scss'
-
 })
-
 export class RoleRightsComponent implements OnInit {
-
   private api = inject(ApiService);
+  private alert = inject(AlertService);
 
   roles: any[] = [];
 
@@ -102,21 +94,25 @@ export class RoleRightsComponent implements OnInit {
 
       if (r.success) {
 
-        for (const row of asArray<any>(r.data)) {
+        for (const rowData of asArray<any>(r.data)) {
 
-          const key = row.menuKey ?? row.MenuKey;
+          const row = normalizeRow(rowData);
+
+          const key = String(pickField(row, 'menuKey', 'MenuKey') ?? '').trim();
+
+          if (!key) continue;
 
           this.rights[key] = {
 
             menuKey: key,
 
-            isView: !!(row.isView ?? row.IsView ?? row.canAccess ?? row.CanAccess),
+            isView: !!(pickField(row, 'isView', 'IsView') ?? pickField(row, 'canAccess', 'CanAccess')),
 
-            isCreate: !!(row.isCreate ?? row.IsCreate ?? row.canAccess ?? row.CanAccess),
+            isCreate: !!pickField(row, 'isCreate', 'IsCreate'),
 
-            isUpdate: !!(row.isUpdate ?? row.IsUpdate ?? row.canAccess ?? row.CanAccess),
+            isUpdate: !!pickField(row, 'isUpdate', 'IsUpdate'),
 
-            isDelete: !!(row.isDelete ?? row.IsDelete ?? row.canAccess ?? row.CanAccess)
+            isDelete: !!pickField(row, 'isDelete', 'IsDelete')
 
           };
 
@@ -163,72 +159,59 @@ export class RoleRightsComponent implements OnInit {
 
 
   save() {
-
     const payload = {
-
       roleID: this.selectedRoleId,
-
+      RoleID: this.selectedRoleId,
       rights: this.menus.map(m => ({
-
         menuKey: m.key,
-
+        MenuKey: m.key,
         isView: !!this.rights[m.key]?.isView,
-
+        IsView: !!this.rights[m.key]?.isView,
         isCreate: !!this.rights[m.key]?.isCreate,
-
+        IsCreate: !!this.rights[m.key]?.isCreate,
         isUpdate: !!this.rights[m.key]?.isUpdate,
-
+        IsUpdate: !!this.rights[m.key]?.isUpdate,
         isDelete: !!this.rights[m.key]?.isDelete,
-
+        IsDelete: !!this.rights[m.key]?.isDelete,
         canAccess: !!(this.rights[m.key]?.isView || this.rights[m.key]?.isCreate ||
-
+          this.rights[m.key]?.isUpdate || this.rights[m.key]?.isDelete),
+        CanAccess: !!(this.rights[m.key]?.isView || this.rights[m.key]?.isCreate ||
           this.rights[m.key]?.isUpdate || this.rights[m.key]?.isDelete)
-
       }))
-
     };
 
     this.api.post('/master/role-rights', payload).subscribe(r => {
-      this.message = r.success
-        ? (r.message || 'Rights saved') + ' — users must log out and log in again to refresh menu.'
-        : (r.message || 'Failed');
+      if (r.success) {
+        this.message = (r.message || 'Rights saved') + ' — users must log out and log in again to refresh menu.';
+        this.alert.toastSuccess('Rights saved successfully');
+      } else {
+        this.message = r.message || 'Failed';
+        this.alert.toastError(this.message);
+      }
     });
-
   }
-
-
 
   addRole() {
-
-    if (!this.newRoleName.trim()) return;
+    if (!this.newRoleName.trim()) {
+      this.alert.toastError('Role name is required');
+      return;
+    }
 
     this.savingRole = true;
-
     this.api.post('/master/roles', { roleName: this.newRoleName.trim(), description: this.newRoleDesc }).subscribe(r => {
-
       this.savingRole = false;
-
       if (r.success) {
-
         this.showAddRole = false;
-
         this.newRoleName = '';
-
         this.newRoleDesc = '';
-
         this.message = r.message || 'Role added';
-
+        this.alert.toastSuccess(this.message);
         this.loadRoles(true);
-
       } else {
-
         this.message = r.message || 'Could not add role';
-
+        this.alert.toastError(this.message);
       }
-
     });
-
   }
-
 }
 

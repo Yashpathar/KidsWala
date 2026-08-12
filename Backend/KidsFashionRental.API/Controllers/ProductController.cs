@@ -15,8 +15,12 @@ public class ProductController : ControllerBase
     public ProductController(IProductService service) => _service = service;
 
     [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] int? companyId)
-        => Ok(await _service.GetAllAsync(companyId ?? ControllerHelper.GetCompanyId(User)));
+    public async Task<IActionResult> GetAll([FromQuery] int? companyId, [FromQuery] int? branchId)
+    {
+        var cid = ControllerHelper.GetCompanyId(User, companyId);
+        var bid = ControllerHelper.GetBranchId(User, branchId);
+        return Ok(await _service.GetAllAsync(cid > 0 ? cid : null, bid > 0 ? bid : null));
+    }
 
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)
@@ -31,6 +35,11 @@ public class ProductController : ControllerBase
     {
         model.CreatedBy = ControllerHelper.GetUserId(User);
         ControllerHelper.ApplyCompanyId(model, ControllerHelper.GetCompanyId(User));
+        if (model.BranchID is null or <= 0)
+        {
+            var bId = ControllerHelper.GetBranchId(User);
+            if (bId > 0) model.BranchID = bId;
+        }
         return Ok(await _service.InsertAsync(model));
     }
 
@@ -39,6 +48,11 @@ public class ProductController : ControllerBase
     {
         model.ModifiedBy = ControllerHelper.GetUserId(User);
         ControllerHelper.ApplyCompanyId(model, ControllerHelper.GetCompanyId(User));
+        if (model.BranchID is null or <= 0)
+        {
+            var bId = ControllerHelper.GetBranchId(User);
+            if (bId > 0) model.BranchID = bId;
+        }
         return Ok(await _service.UpdateAsync(model));
     }
 

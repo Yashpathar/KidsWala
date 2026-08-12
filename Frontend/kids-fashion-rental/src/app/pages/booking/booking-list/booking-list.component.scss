@@ -6,12 +6,33 @@
   padding: 1rem 1.25rem;
   margin-bottom: 1rem;
   i { color: var(--text-muted); }
-  input { flex: 1; min-width: 180px; border: none; outline: none; }
+  input { flex: 1; min-width: 180px; border: 1px solid var(--border); border-radius: 8px; padding: 0.45rem 0.65rem; outline: none; }
   select {
     border: 1px solid var(--border);
     border-radius: 8px;
     padding: 0.45rem 0.65rem;
   }
+}
+
+.date-group {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  label { font-size: 0.85rem; font-weight: 500; color: #555; }
+  input[type='date'] {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.45rem 0.65rem;
+  }
+}
+
+.btn-outline {
+  border: 1px solid var(--primary);
+  background: #fff;
+  color: var(--primary);
+  padding: 0.45rem 0.85rem;
+  border-radius: 8px;
+  cursor: pointer;
 }
 
 .actions {

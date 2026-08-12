@@ -8,4 +8,5 @@ public interface ICompanyRepository
     Task<ApiResult> GetAllAsync();
     Task<ApiResult> InsertAsync(CompanyModel model);
     Task<ApiResult> UpdateAsync(CompanyModel model);
+    Task<ApiResult> DeleteAsync(int companyId);
 }

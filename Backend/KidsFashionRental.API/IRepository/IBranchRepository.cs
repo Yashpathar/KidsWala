@@ -9,4 +9,5 @@ public interface IBranchRepository
     Task<ApiResult> GetByCompanyAsync(int companyId);
     Task<ApiResult> InsertAsync(BranchModel model);
     Task<ApiResult> UpdateAsync(BranchModel model);
+    Task<ApiResult> DeleteAsync(int branchId);
 }

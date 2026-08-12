@@ -1,13 +1,17 @@
 <div class="return-report-page">
   <div class="page-header flex-between">
     <div>
-      <h2>Today Return Report</h2>
-      <p class="breadcrumb">REPORTS / <strong>Today Return</strong></p>
+      <h2>Return Report</h2>
+      <p class="breadcrumb">REPORTS / <strong>Return Report</strong></p>
     </div>
     <div class="toolbar no-print">
       <div class="date-field">
-        <i class="bi bi-calendar3"></i>
-        <input type="date" [(ngModel)]="reportDate" (change)="load()" />
+        <span>From:</span>
+        <input type="date" [(ngModel)]="fromDate" (change)="load()" />
+      </div>
+      <div class="date-field">
+        <span>To:</span>
+        <input type="date" [(ngModel)]="toDate" (change)="load()" />
       </div>
       <button type="button" class="btn-primary" (click)="load()" [disabled]="loading">
         <i class="bi bi-arrow-clockwise" [class.spin]="loading"></i> Refresh
@@ -75,7 +79,7 @@
 
   <div class="ui-card table-card table-wrap desktop-table">
     <div class="table-top no-print">
-      <h3><i class="bi bi-list-check"></i> Returns for {{ reportDate | date:'dd MMM yyyy' }}</h3>
+      <h3><i class="bi bi-list-check"></i> Returns List</h3>
       <span class="count-pill">{{ rows.length }} booking(s)</span>
     </div>
 

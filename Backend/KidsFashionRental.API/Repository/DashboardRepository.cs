@@ -7,6 +7,9 @@ namespace KidsFashionRental.API.Repository;
 
 public class DashboardRepository : IDashboardRepository
 {
+    private static DateTime? CleanDate(DateTime? dt) =>
+        dt.HasValue && dt.Value.Year >= 1753 && dt.Value.Year <= 9999 ? dt.Value : null;
+
     public async Task<ApiResult> GetCountsAsync(ReportFilterModel filter)
     {
         var result = new ApiResult();
@@ -32,6 +35,7 @@ public class DashboardRepository : IDashboardRepository
         {
             var p = new DynamicParameters();
             p.Add("CompanyID", filter.CompanyID);
+            p.Add("BranchID", filter.BranchID);
             p.Add("FilterUserID", filter.FilterUserID);
             var data = await BaseDataProvider.QueryAsync<ChartDataModel>("SP_MonthlyIncome", p);
             result.Success = true;
@@ -48,6 +52,7 @@ public class DashboardRepository : IDashboardRepository
         {
             var p = new DynamicParameters();
             p.Add("CompanyID", filter.CompanyID);
+            p.Add("BranchID", filter.BranchID);
             p.Add("FilterUserID", filter.FilterUserID);
             var data = await BaseDataProvider.QueryAsync<ChartDataModel>("SP_BookingStatusChart", p);
             result.Success = true;
@@ -62,10 +67,16 @@ public class DashboardRepository : IDashboardRepository
         var result = new ApiResult();
         try
         {
+            var reportDate = CleanDate(filter.ReportDate);
+            var fromDate = CleanDate(filter.FromDate) ?? reportDate;
+            var toDate = CleanDate(filter.ToDate) ?? reportDate;
+
             var p = new DynamicParameters();
             p.Add("CompanyID", filter.CompanyID);
             p.Add("BranchID", filter.BranchID);
-            p.Add("ReportDate", filter.ReportDate);
+            p.Add("ReportDate", reportDate);
+            p.Add("FromDate", fromDate);
+            p.Add("ToDate", toDate);
             p.Add("FilterUserID", filter.FilterUserID);
             var data = await BaseDataProvider.QueryAsync<object>("SP_TodayDeliveryReport", p);
             result.Success = true;
@@ -81,10 +92,16 @@ public class DashboardRepository : IDashboardRepository
         var result = new ApiResult();
         try
         {
+            var reportDate = CleanDate(filter.ReportDate);
+            var fromDate = CleanDate(filter.FromDate) ?? reportDate;
+            var toDate = CleanDate(filter.ToDate) ?? reportDate;
+
             var p = new DynamicParameters();
             p.Add("CompanyID", filter.CompanyID);
             p.Add("BranchID", filter.BranchID);
-            p.Add("ReportDate", filter.ReportDate);
+            p.Add("ReportDate", reportDate);
+            p.Add("FromDate", fromDate);
+            p.Add("ToDate", toDate);
             p.Add("FilterUserID", filter.FilterUserID);
             var data = await BaseDataProvider.QueryAsync<TodayReturnReportModel>("SP_TodayReturnReport", p);
             result.Success = true;
@@ -102,6 +119,7 @@ public class DashboardRepository : IDashboardRepository
         {
             var p = new DynamicParameters();
             p.Add("CompanyID", filter.CompanyID);
+            p.Add("BranchID", filter.BranchID);
             p.Add("FilterUserID", filter.FilterUserID);
             p.Add("TopN", topN);
             var data = await BaseDataProvider.QueryAsync<TopProductModel>("SP_TopProducts", p);
@@ -117,10 +135,14 @@ public class DashboardRepository : IDashboardRepository
         var result = new ApiResult();
         try
         {
+            var reportDate = CleanDate(filter.ReportDate) ?? DateTime.Today;
+
             var p = new DynamicParameters();
             p.Add("CompanyID", filter.CompanyID);
             p.Add("BranchID", filter.BranchID);
-            p.Add("ReportDate", filter.ReportDate ?? DateTime.Today);
+            p.Add("ReportDate", reportDate);
+            p.Add("FromDate", reportDate);
+            p.Add("ToDate", reportDate);
             p.Add("FilterUserID", filter.FilterUserID);
 
             var counts = await GetCountsAsync(filter);
@@ -151,11 +173,16 @@ public class DashboardRepository : IDashboardRepository
 
     public Task<ApiResult> PaymentReportAsync(ReportFilterModel filter)
     {
+        var reportDate = CleanDate(filter.ReportDate);
+        var fromDate = CleanDate(filter.FromDate) ?? reportDate;
+        var toDate = CleanDate(filter.ToDate) ?? reportDate;
+
         var p = new DynamicParameters();
         p.Add("CompanyID", filter.CompanyID);
         p.Add("BranchID", filter.BranchID);
-        p.Add("FromDate", filter.FromDate ?? filter.ReportDate);
-        p.Add("ToDate", filter.ToDate ?? filter.ReportDate);
+        p.Add("ReportDate", reportDate);
+        p.Add("FromDate", fromDate);
+        p.Add("ToDate", toDate);
         p.Add("FilterUserID", filter.FilterUserID);
         return RepositoryHelper.QueryListAsync<object>("SP_PaymentReport", p);
     }

@@ -16,7 +16,10 @@ public class ColorController : ControllerBase
 
     [HttpGet]
     public async Task<IActionResult> GetAll([FromQuery] int? companyId)
-        => Ok(await _service.GetAllAsync(companyId ?? ControllerHelper.GetCompanyId(User)));
+    {
+        var cid = ControllerHelper.GetCompanyId(User, companyId);
+        return Ok(await _service.GetAllAsync(cid > 0 ? cid : null));
+    }
 
     [HttpGet("{id:int}")]
     public async Task<IActionResult> GetById(int id)

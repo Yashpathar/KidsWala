@@ -3,29 +3,33 @@
     <h2>Product Master</h2>
     <p class="breadcrumb">MASTERS / <strong>Product Master</strong></p>
   </div>
-  <a routerLink="/masters/add-product" class="btn-primary">
-    <i class="bi bi-plus-lg"></i> Add Product
-  </a>
-</div>
-
-@if (message) {
-  <div [class]="messageType === 'success' ? 'alert-success' : 'alert-error'">{{ message }}</div>
-}
-@if (loading && !products.length) {
-  <div class="glass-card loading-box">Loading products...</div>
-}
-
-@if (message) {
-  <div [class]="messageType === 'success' ? 'alert-success' : 'alert-error'">{{ message }}</div>
-}
+  @if (auth.canCreateMenu('product')) {
+    <a routerLink="/masters/add-product" class="btn-primary">
+      <i class="bi bi-plus-lg"></i> Add Product
+    </a>
+  }
 @if (loading && !products.length) {
   <div class="glass-card loading-box">Loading products...</div>
 }
 
 <div class="ui-card filters flex-between">
-  <div class="search-box">
-    <i class="bi bi-search"></i>
-    <input [(ngModel)]="search" placeholder="Search code (BL-01), name, category, size, color..." />
+  <div class="filter-controls flex-gap">
+    <div class="search-box">
+      <i class="bi bi-search"></i>
+      <input [(ngModel)]="search" placeholder="Search code (BL-01), name, category, size, color..." />
+    </div>
+
+    @if (branches.length > 0) {
+      <div class="branch-filter-box">
+        <i class="bi bi-shop"></i>
+        <select [(ngModel)]="selectedBranchId" (change)="onBranchChange()">
+          <option [ngValue]="null">All Branches</option>
+          @for (b of branches; track b.branchID || b.BranchID) {
+            <option [ngValue]="b.branchID || b.BranchID">{{ b.branchName || b.BranchName }}</option>
+          }
+        </select>
+      </div>
+    }
   </div>
 
   <!-- VIEW MODE TAB SWITCHER -->
@@ -50,6 +54,7 @@
           <th>Design Code</th>
           <th>Name</th>
           <th>Category</th>
+          <th>Branch</th>
           <th>Available Sizes</th>
           <th>Color</th>
           <th>Rent</th>
@@ -88,11 +93,17 @@
               </div>
             </td>
             <td><span class="category-pill">{{ g.categoryName }}</span></td>
-            <td>
+            <td><span class="branch-pill"><i class="bi bi-geo-alt"></i> {{ getBranchName(g.items[0] || g) }}</span></td>
+            <td (click)="toggleGroup(g.groupCode); $event.stopPropagation()">
               <div class="sizes-chips-row">
-                @for (item of g.items; track item.productID) {
-                  <span class="size-chip-sm" title="Click row to view size details">
+                @for (item of g.items.slice(0, 1); track item.productID) {
+                  <span class="size-chip-sm" title="Click to view all {{ g.items.length }} sizes">
                     Size {{ getSizeName(item) }}
+                  </span>
+                }
+                @if (g.items.length > 1) {
+                  <span class="size-more-pill" title="Click to view all {{ g.items.length }} sizes">
+                    <i class="bi bi-chevron-down"></i> +{{ g.items.length - 1 }} More
                   </span>
                 }
               </div>
@@ -163,12 +174,16 @@
                               <a [routerLink]="['/masters/edit-product', item.productID]" [queryParams]="{ view: true }" class="btn-icon-action" title="View Details">
                                 <i class="bi bi-eye"></i>
                               </a>
-                              <a [routerLink]="['/masters/edit-product', item.productID]" class="btn-icon-action" title="Edit Product">
-                                <i class="bi bi-pencil"></i>
-                              </a>
-                              <button type="button" class="btn-icon-action danger" (click)="delete(item)" title="Delete Product">
-                                <i class="bi bi-trash"></i>
-                              </button>
+                              @if (auth.canUpdateMenu('product')) {
+                                <a [routerLink]="['/masters/edit-product', item.productID]" class="btn-icon-action" title="Edit Product">
+                                  <i class="bi bi-pencil"></i>
+                                </a>
+                              }
+                              @if (auth.canDeleteMenu('product')) {
+                                <button type="button" class="btn-icon-action danger" (click)="delete(item)" title="Delete Product">
+                                  <i class="bi bi-trash"></i>
+                                </button>
+                              }
                             </div>
                           </td>
                         </tr>
@@ -195,6 +210,7 @@
           <th>Code</th>
           <th>Name</th>
           <th>Category</th>
+          <th>Branch</th>
           <th>Size</th>
           <th>Color</th>
           <th>Rent</th>
@@ -228,6 +244,9 @@
             </td>
             <td>
               <span class="category-pill">{{ getCategoryName(p) }}</span>
+            </td>
+            <td>
+              <span class="branch-pill"><i class="bi bi-geo-alt"></i> {{ getBranchName(p) }}</span>
             </td>
             <td>
               @if (p.isFullSet) {
@@ -265,12 +284,16 @@
                 <a [routerLink]="['/masters/edit-product', p.productID]" [queryParams]="{ view: true }" class="btn-icon-action" title="View Details">
                   <i class="bi bi-eye"></i>
                 </a>
-                <a [routerLink]="['/masters/edit-product', p.productID]" class="btn-icon-action" title="Edit Product">
-                  <i class="bi bi-pencil"></i>
-                </a>
-                <button type="button" class="btn-icon-action danger" (click)="delete(p)" title="Delete Product">
-                  <i class="bi bi-trash"></i>
-                </button>
+                @if (auth.canUpdateMenu('product')) {
+                  <a [routerLink]="['/masters/edit-product', p.productID]" class="btn-icon-action" title="Edit Product">
+                    <i class="bi bi-pencil"></i>
+                  </a>
+                }
+                @if (auth.canDeleteMenu('product')) {
+                  <button type="button" class="btn-icon-action danger" (click)="delete(p)" title="Delete Product">
+                    <i class="bi bi-trash"></i>
+                  </button>
+                }
               </div>
             </td>
           </tr>

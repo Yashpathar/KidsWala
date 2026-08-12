@@ -1,8 +1,27 @@
 .invoice-actions { display: flex; gap: 0.75rem; margin-bottom: 1rem; }
 .invoice { padding: 2rem; max-width: 900px; margin: 0 auto 2rem; }
-.invoice-header { display: flex; justify-content: space-between; border-bottom: 2px solid var(--primary); padding-bottom: 1rem; margin-bottom: 1.5rem;
-  h1 { margin: 0; color: var(--primary); font-size: 1.5rem; }
+.invoice-header { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid var(--primary); padding-bottom: 1rem; margin-bottom: 1.5rem;
+  h1 { margin: 0; color: var(--primary); font-size: 1.4rem; font-weight: 800; }
   h2 { margin: 0; color: var(--text-muted); }
+  p { margin: 0.25rem 0 0; color: var(--text-muted); font-size: 0.88rem; }
+}
+.invoice-brand-block {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+.invoice-company-logo {
+  max-width: 80px;
+  max-height: 80px;
+  object-fit: contain;
+  border-radius: 10px;
+  padding: 4px;
+  background: #ffffff;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-xs);
+}
+.invoice-icon {
+  font-size: 2.2rem;
 }
 .invoice-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem; margin-bottom: 1.5rem;
   h4 { margin: 0 0 0.5rem; color: var(--primary); }
