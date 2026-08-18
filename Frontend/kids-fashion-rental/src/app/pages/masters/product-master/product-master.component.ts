@@ -68,6 +68,21 @@ export class ProductMasterComponent implements OnInit {
   messageType: 'success' | 'error' = 'success';
   loading = false;
   saving = false;
+  showImageLightbox = false;
+  lightboxImage = '';
+  lightboxTitle = '';
+
+  openImageLightbox(url: string, title: string, event?: Event) {
+    if (event) event.stopPropagation();
+    if (!url) return;
+    this.lightboxImage = url;
+    this.lightboxTitle = title;
+    this.showImageLightbox = true;
+  }
+
+  closeImageLightbox() {
+    this.showImageLightbox = false;
+  }
 
   form: any = {};
 

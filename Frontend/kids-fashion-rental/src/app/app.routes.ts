@@ -56,6 +56,25 @@ const colorConfig: MasterConfig = {
   ]
 };
 
+const roleConfig: MasterConfig = {
+  type: 'role',
+  title: 'Role Master',
+  idField: 'roleID',
+  columns: [
+    { key: 'roleID', label: 'ID' },
+    { key: 'roleName', label: 'Role Name' },
+    { key: 'description', label: 'Description' },
+    { key: 'dataScope', label: 'Data Scope' },
+    { key: 'isActive', label: 'Active' }
+  ],
+  fields: [
+    { key: 'roleName', label: 'Role Name *', required: true },
+    { key: 'description', label: 'Description', type: 'textarea' },
+    { key: 'dataScope', label: 'Data Scope' },
+    { key: 'isActive', label: 'Active', type: 'checkbox' }
+  ]
+};
+
 export const routes: Routes = [
   { path: 'login', loadComponent: () => import('./pages/login/login.component').then(m => m.LoginComponent) },
   {
@@ -68,15 +87,18 @@ export const routes: Routes = [
       { path: 'masters/category', canActivate: [menuGuard('category')], loadComponent: () => import('./pages/masters/master-crud/master-crud.component').then(m => m.MasterCrudComponent), data: { config: categoryConfig } },
       { path: 'masters/size', canActivate: [menuGuard('size')], loadComponent: () => import('./pages/masters/master-crud/master-crud.component').then(m => m.MasterCrudComponent), data: { config: sizeConfig } },
       { path: 'masters/color', canActivate: [menuGuard('color')], loadComponent: () => import('./pages/masters/master-crud/master-crud.component').then(m => m.MasterCrudComponent), data: { config: colorConfig } },
+      { path: 'masters/role', canActivate: [menuGuard('role')], loadComponent: () => import('./pages/masters/master-crud/master-crud.component').then(m => m.MasterCrudComponent), data: { config: roleConfig } },
       { path: 'masters/product', canActivate: [menuGuard('product')], loadComponent: () => import('./pages/masters/product-master/product-master.component').then(m => m.ProductMasterComponent) },
       { path: 'masters/add-product', canActivate: [menuGuard('product')], loadComponent: () => import('./pages/masters/add-product/add-product.component').then(m => m.AddProductComponent) },
       { path: 'masters/edit-product/:id', canActivate: [menuGuard('product')], loadComponent: () => import('./pages/masters/add-product/add-product.component').then(m => m.AddProductComponent) },
+      { path: 'masters/bulk-product', canActivate: [menuGuard('product')], loadComponent: () => import('./pages/masters/bulk-product/bulk-product.component').then(m => m.BulkProductComponent) },
       { path: 'masters/company', canActivate: [menuGuard('company')], loadComponent: () => import('./pages/masters/company-master/company-master.component').then(m => m.CompanyMasterComponent) },
       { path: 'masters/branch', canActivate: [menuGuard('branch')], loadComponent: () => import('./pages/masters/branch-master/branch-master.component').then(m => m.BranchMasterComponent) },
       { path: 'masters/user', canActivate: [menuGuard('user')], loadComponent: () => import('./pages/masters/user-master/user-master.component').then(m => m.UserMasterComponent) },
       { path: 'masters/role-rights', canActivate: [menuGuard('roleRights')], loadComponent: () => import('./pages/masters/role-rights/role-rights.component').then(m => m.RoleRightsComponent) },
       { path: 'booking/add', canActivate: [menuGuard('bookingAdd')], loadComponent: () => import('./pages/booking/add-booking/add-booking.component').then(m => m.AddBookingComponent) },
       { path: 'booking/list', canActivate: [menuGuard('bookingList')], loadComponent: () => import('./pages/booking/booking-list/booking-list.component').then(m => m.BookingListComponent) },
+      { path: 'booking/availability-check', loadComponent: () => import('./pages/booking/availability-check/availability-check.component').then(m => m.AvailabilityCheckComponent) },
       { path: 'reports', canActivate: [menuGuard('reportBooking')], loadComponent: () => import('./pages/reports/reports-hub/reports-hub.component').then(m => m.ReportsHubComponent) },
       { path: 'reports/delivery', canActivate: [menuGuard('reportDelivery')], loadComponent: () => import('./pages/reports/delivery-report/delivery-report.component').then(m => m.DeliveryReportComponent) },
       { path: 'reports/return', canActivate: [menuGuard('reportReturn')], loadComponent: () => import('./pages/reports/return-report/return-report.component').then(m => m.ReturnReportComponent) },

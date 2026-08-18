@@ -1,0 +1,221 @@
+<div class="bulk-import-page slide-up">
+  <!-- Hero Section -->
+  <div class="bulk-hero ui-card">
+    <div class="hero-content">
+      <div class="welcome-badge">
+        <i class="bi bi-file-earmark-excel-fill"></i>
+        <span>Bulk Operations</span>
+      </div>
+      <h2>Bulk Product Add</h2>
+      <p class="hero-sub">Upload an Excel spreadsheet to import multiple products into the system at once.</p>
+    </div>
+
+    <div class="hero-actions">
+      <button class="btn-outline-gold" (click)="downloadSampleTemplate()" [disabled]="loading || validating || importing">
+        <i class="bi bi-download"></i>
+        <span>Download Sample Template</span>
+      </button>
+      <a routerLink="/masters/product" class="btn-secondary">
+        <i class="bi bi-arrow-left"></i>
+        <span>Back to Products</span>
+      </a>
+    </div>
+  </div>
+
+  <!-- Scope Configuration Selection Card -->
+  <div class="scope-card ui-card mb-4">
+    <div class="scope-header">
+      <i class="bi bi-gear-fill header-icon"></i>
+      <div>
+        <h4>Target Scope Configuration</h4>
+        <small class="text-muted">Set company and branch destinations for bulk uploads</small>
+      </div>
+    </div>
+    <div class="scope-grid">
+      <!-- Company Picker (Visible only for Platform Admin) -->
+      <div class="form-group" *ngIf="auth.isPlatformAdmin()">
+        <label for="companySelect">Target Company *</label>
+        <select id="companySelect" [(ngModel)]="selectedCompanyID" (change)="onCompanyChange()" [disabled]="validating || importing">
+          <option [ngValue]="null">-- Select Company --</option>
+          <option *ngFor="let c of companies" [ngValue]="c.companyID || c.CompanyID">{{ c.companyName || c.CompanyName }}</option>
+        </select>
+      </div>
+      <!-- Company Locked Display (For non-platform admins) -->
+      <div class="form-group" *ngIf="!auth.isPlatformAdmin()">
+        <label>Target Company</label>
+        <input type="text" [value]="auth.currentUser()?.companyName || 'RentRiwaaz'" disabled />
+      </div>
+
+      <!-- Branch Picker (Editable for Platform Admin / Company Admin, locked for Branch Admin / Staff) -->
+      <div class="form-group">
+        <label for="branchSelect">Target Branch *</label>
+        <select id="branchSelect" [(ngModel)]="selectedBranchID" (change)="onBranchChange()" [disabled]="validating || importing || auth.isBranchStaff()">
+          <option [ngValue]="null">-- Select Branch --</option>
+          <option *ngFor="let b of getFilteredBranches()" [ngValue]="b.branchID || b.BranchID">{{ b.branchName || b.BranchName }}</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Drag and Drop Upload Card -->
+  <div class="upload-card ui-card" *ngIf="!parsedRows.length && !validating">
+    <div class="upload-dropzone" 
+         (dragover)="onFileDragOver($event)" 
+         (drop)="onFileDrop($event)"
+         (click)="fileInput.click()">
+      <div class="dz-content">
+        <div class="dz-icon">
+          <i class="bi bi-cloud-arrow-up-fill"></i>
+        </div>
+        <h3>{{ fileInputLabel }}</h3>
+        <p class="dz-sub">Drag and drop your populated spreadsheet here, or click to browse files from your computer.</p>
+        <span class="file-hint">Supported formats: Excel (.xlsx, .xls)</span>
+      </div>
+      <input type="file" #fileInput (change)="onFileSelected($event)" accept=".xlsx, .xls" style="display: none;" />
+    </div>
+  </div>
+
+  <!-- Loader View -->
+  <div class="loader-card ui-card text-center" *ngIf="validating || loading">
+    <div class="spinner-box">
+      <i class="bi bi-arrow-repeat spin"></i>
+      <h4 class="mt-3">{{ validating ? 'Parsing and validating Excel sheet...' : 'Loading master lookups...' }}</h4>
+      <p class="text-muted">Please wait a moment while we process the data.</p>
+    </div>
+  </div>
+
+  <!-- Validation & Import Controls Card -->
+  <div class="parsed-data-section fade-in" *ngIf="parsedRows.length && !validating">
+    <div class="control-bar ui-card mb-3">
+      <div class="summary-pills">
+        <div class="summary-pill total">
+          <span class="label">Total Parsed</span>
+          <span class="count">{{ validationSummary.total }}</span>
+        </div>
+        <div class="summary-pill valid">
+          <span class="label">Valid & Ready</span>
+          <span class="count">{{ validationSummary.valid }}</span>
+        </div>
+        <div class="summary-pill invalid">
+          <span class="label">Invalid (Errors)</span>
+          <span class="count">{{ validationSummary.invalid }}</span>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button class="btn-danger-outline" (click)="clearList()" [disabled]="importing">
+          <i class="bi bi-trash-fill"></i>
+          <span>Clear File</span>
+        </button>
+        <button class="btn-primary" (click)="importProducts()" [disabled]="importing || !validationSummary.valid">
+          <i class="bi bi-box-arrow-in-right" *ngIf="!importing"></i>
+          <i class="bi bi-arrow-repeat spin" *ngIf="importing"></i>
+          <span>{{ importing ? 'Importing...' : 'Import Valid Products (' + validationSummary.valid + ')' }}</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Real-time Progress Bar -->
+    <div class="progress-card ui-card mb-3" *ngIf="importing">
+      <div class="progress-header">
+        <strong>Import Progress</strong>
+        <span>{{ importProgress }} / {{ importTotal }} Completed</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div class="progress-bar-fill" [style.width.%]="(importProgress / importTotal) * 100"></div>
+      </div>
+      <p class="progress-status-text">{{ currentStatusText }}</p>
+    </div>
+
+    <!-- Preview Grid Table -->
+    <div class="preview-table-card ui-card">
+      <div class="table-header">
+        <h4>Spreadsheet Preview & Validation</h4>
+        <small class="text-muted">Review mapping diagnostics and fix spreadsheet validation errors before importing.</small>
+      </div>
+      <div class="table-responsive">
+        <table class="preview-table">
+          <thead>
+            <tr>
+              <th width="70">Row #</th>
+              <th>Product Code</th>
+              <th>Product Name</th>
+              <th>Category</th>
+              <th>Size</th>
+              <th>Color</th>
+              <th>Rent / Deposit</th>
+              <th>Status</th>
+              <th>Diagnostic Message</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr *ngFor="let row of parsedRows" [class.row-invalid]="row.status === 'Invalid'" [class.row-success]="row.status === 'Success'" [class.row-failed]="row.status === 'Failed'">
+              <td><strong>#{{ row.rowNum }}</strong></td>
+              <td><span class="code-badge">{{ row.productCode || 'N/A' }}</span></td>
+              <td>
+                <div class="name-cell">
+                  <strong>{{ row.productName || 'N/A' }}</strong>
+                  <span class="fullset-badge" *ngIf="row.isFullSet">Full Set</span>
+                </div>
+              </td>
+              <td>
+                <span [class.text-danger]="!row.categoryID">
+                  {{ row.categoryName || 'N/A' }}
+                </span>
+              </td>
+              <td>
+                <span [class.text-danger]="!row.sizeID">
+                  {{ row.sizeName || 'N/A' }}
+                </span>
+              </td>
+              <td>
+                <span [class.text-danger]="!row.colorID">
+                  {{ row.colorName || 'N/A' }}
+                </span>
+              </td>
+              <td>
+                <div class="price-cell">
+                  <strong>{{ row.rentAmount | currency:'INR':'symbol':'1.0-0' }}</strong>
+                  <small class="text-muted">Dep: {{ row.depositAmount | currency:'INR':'symbol':'1.0-0' }}</small>
+                </div>
+              </td>
+              <td>
+                <span class="status-badge" [class.valid]="row.status === 'Valid'" 
+                      [class.invalid]="row.status === 'Invalid'"
+                      [class.importing]="row.status === 'Importing'"
+                      [class.success]="row.status === 'Success'"
+                      [class.failed]="row.status === 'Failed'">
+                  {{ row.status }}
+                </span>
+              </td>
+              <td class="diagnostic-cell">
+                <!-- Validation Errors -->
+                <div class="errors-wrap" *ngIf="row.errors.length > 0">
+                  <span class="error-item" *ngFor="let err of row.errors">
+                    <i class="bi bi-exclamation-triangle-fill"></i> {{ err }}
+                  </span>
+                </div>
+                <!-- Success State -->
+                <span class="text-success" *ngIf="row.status === 'Success'">
+                  <i class="bi bi-check-circle-fill"></i> Imported successfully.
+                </span>
+                <!-- API Import Error -->
+                <span class="text-danger" *ngIf="row.status === 'Failed' && row.apiError">
+                  <i class="bi bi-x-circle-fill"></i> {{ row.apiError }}
+                </span>
+                <!-- Valid Placeholder -->
+                <span class="text-muted" *ngIf="row.status === 'Valid'">
+                  Ready for database insertion.
+                </span>
+                <!-- Importing Placeholder -->
+                <span class="text-secondary" *ngIf="row.status === 'Importing'">
+                  <i class="bi bi-arrow-repeat spin"></i> Writing to DB...
+                </span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,240 @@
+<div class="page-header flex-between anim-fade-in">
+  <div>
+    <h2><i class="bi bi-calendar-check-fill text-primary me-2"></i> Product Code Availability Check</h2>
+    <p class="breadcrumb">Check real-time availability and booking schedules for any product or pair code</p>
+  </div>
+  <a routerLink="/booking/list" class="btn-outline"><i class="bi bi-arrow-left"></i> <span>Back to Bookings</span></a>
+</div>
+
+<div class="availability-page">
+  <!-- Search & Filter Card -->
+  <div class="ui-card filter-card anim-card" style="--anim-order: 1">
+    <h4><i class="bi bi-search"></i> Search Product Code & Set Dates</h4>
+    <form (submit)="checkAvailability(); $event.preventDefault();" class="filter-form">
+      <div class="filter-grid">
+        <div class="field-group code-field">
+          <label>Product / Pair Code <span class="text-danger">*</span></label>
+          <div class="search-input-wrap">
+            <i class="bi bi-qr-code-scan"></i>
+            <input
+              type="text"
+              [(ngModel)]="productCode"
+              name="productCode"
+              (input)="onCodeInput()"
+              (focus)="onCodeInput()"
+              (blur)="hideSuggestionsWithDelay()"
+              placeholder="e.g. BL-04-6, BL-04P-1, BL-10-12..."
+              autocomplete="off"
+              autofocus
+            />
+
+            <!-- Auto-complete Suggestions Dropdown -->
+            @if (showSuggestions && filteredSuggestions.length) {
+              <ul class="suggestions-dropdown anim-slide-down">
+                @for (s of filteredSuggestions; track s.code) {
+                  <li (mousedown)="selectSuggestion(s)">
+                    <div class="s-main">
+                      <strong class="code-badge">{{ s.code }}</strong>
+                      <span class="type-pill">{{ s.type }}</span>
+                    </div>
+                    <small class="text-muted">{{ s.name }}</small>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        </div>
+
+        <div class="field-group">
+          <app-custom-datepicker label="Delivery Date" [(ngModel)]="deliveryDate" name="deliveryDate" (dateChange)="searched && checkAvailability()"></app-custom-datepicker>
+        </div>
+
+        <div class="field-group">
+          <app-custom-datepicker label="Return Date" [(ngModel)]="returnDate" name="returnDate" (dateChange)="searched && checkAvailability()"></app-custom-datepicker>
+        </div>
+
+        <div class="btn-group-actions">
+          <button type="submit" class="btn-primary btn-search" [disabled]="loading">
+            @if (loading) { <i class="bi bi-arrow-repeat spin"></i> Searching... } @else { <i class="bi bi-search me-1"></i> Check Status }
+          </button>
+          @if (productCode || searched) {
+            <button type="button" class="btn-outline" (click)="clearSearch()">Reset</button>
+          }
+        </div>
+      </div>
+    </form>
+  </div>
+
+  @if (loading) {
+    <div class="ui-card state-card loading-state anim-fade-in">
+      <i class="bi bi-arrow-repeat spin fs-1 text-primary"></i>
+      <p class="mt-2 text-muted fw-bold">Checking availability for product code...</p>
+    </div>
+  }
+
+  @if (errorMessage) {
+    <div class="ui-card state-card error-state anim-pop">
+      <i class="bi bi-exclamation-triangle-fill text-danger fs-1"></i>
+      <h4 class="text-danger mt-2">Product Status Check Result</h4>
+      <p class="text-muted">{{ errorMessage }}</p>
+    </div>
+  }
+
+  @if (searched && !loading && productData && productData.product) {
+    <!-- Main Results Container -->
+    <div class="results-container anim-slide-up">
+
+      <!-- Availability Banner -->
+      <div class="status-banner" [class.available]="productData.isAvailable" [class.booked]="!productData.isAvailable">
+        <div class="banner-content">
+          <div class="status-icon-wrap">
+            <i class="bi" [class.bi-check-circle-fill]="productData.isAvailable" [class.bi-x-circle-fill]="!productData.isAvailable"></i>
+          </div>
+          <div>
+            <h3>
+              {{ productData.isAvailable ? 'AVAILABLE FOR SELECTED DATES' : 'NOT AVAILABLE (BOOKED)' }}
+            </h3>
+            <p>
+              Dates: <strong>{{ deliveryDate | date:'dd-MM-yyyy' }}</strong> to <strong>{{ returnDate | date:'dd-MM-yyyy' }}</strong>
+            </p>
+          </div>
+        </div>
+        <div class="banner-badge">
+          {{ productData.isAvailable ? 'READY TO BOOK' : 'BOOKED CONFLICT' }}
+        </div>
+      </div>
+
+      <!-- Product & Conflict Details Grid -->
+      <div class="details-grid">
+
+        <!-- Product Overview -->
+        <div class="ui-card product-info-card">
+          <h4><i class="bi bi-bag-fill text-primary"></i> Product Information</h4>
+          <div class="product-media-row">
+            @if (productData.product.ProductImage || productData.product.productImage) {
+              <img [src]="productImageUrl(productData.product.ProductImage || productData.product.productImage)" (error)="onImgError($event)" alt="" class="product-thumb" />
+            } @else {
+              <div class="product-thumb placeholder"><i class="bi bi-image"></i></div>
+            }
+            <div class="product-meta">
+              <span class="code-pill">{{ productData.product.ProductCode || productData.product.productCode }}</span>
+              <h5>{{ productData.product.ProductName || productData.product.productName }}</h5>
+              <div class="rent-badge-row">
+                <span>Rent: <strong>{{ (productData.product.RentAmount || productData.product.rentAmount) | currency:'INR' }}</strong></span>
+                <span>Deposit: <strong>{{ (productData.product.DepositAmount || productData.product.depositAmount) | currency:'INR' }}</strong></span>
+              </div>
+            </div>
+          </div>
+
+          @if (productData.product.IsFullSet || productData.product.isFullSet) {
+            <div class="pair-details-box">
+              <div class="pair-item blazer">
+                <i class="bi bi-suit-club-fill"></i>
+                <div>
+                  <span class="label">Blazer / Top Code</span>
+                  <strong>{{ productData.product.TopCode || productData.product.topCode || productData.product.ProductCode }}</strong>
+                  <small>Size: {{ productData.product.TopSize || productData.product.topSize || '-' }}</small>
+                </div>
+              </div>
+              <div class="pair-item pant">
+                <i class="bi bi-scissors"></i>
+                <div>
+                  <span class="label">Pant / Bottom Code</span>
+                  <strong>{{ productData.product.BottomCode || productData.product.bottomCode || (productData.product.ProductCode + '-P') }}</strong>
+                  <small>Size: {{ productData.product.BottomSize || productData.product.bottomSize || '-' }}</small>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
+        <!-- Active Conflict Booking Card -->
+        @if (!productData.isAvailable && productData.currentBooking) {
+          <div class="ui-card conflict-card">
+            <h4 class="text-danger"><i class="bi bi-exclamation-triangle-fill"></i> Booked Conflict Details</h4>
+            <div class="conflict-grid">
+              <div class="conflict-item">
+                <span>Booking No:</span>
+                <strong class="text-primary fs-5">{{ productData.currentBooking.BookingNo || productData.currentBooking.bookingNo }}</strong>
+              </div>
+              <div class="conflict-item">
+                <span>Customer Name:</span>
+                <strong>{{ productData.currentBooking.CustomerName || productData.currentBooking.customerName }}</strong>
+              </div>
+              <div class="conflict-item">
+                <span>Contact Phone:</span>
+                <strong>{{ productData.currentBooking.CustomerPhone || productData.currentBooking.customerPhone || 'N/A' }}</strong>
+              </div>
+              <div class="conflict-item">
+                <span>Booking Date:</span>
+                <strong>{{ (productData.currentBooking.BookingDate || productData.currentBooking.bookingDate) | date:'dd-MM-yyyy' }}</strong>
+              </div>
+              <div class="conflict-item highlight-delivery">
+                <span>Delivery Date:</span>
+                <strong class="text-primary">{{ (productData.currentBooking.DeliveryDate || productData.currentBooking.deliveryDate) | date:'dd-MM-yyyy' }}</strong>
+              </div>
+              <div class="conflict-item highlight-return">
+                <span>Return Date:</span>
+                <strong class="text-danger">{{ (productData.currentBooking.ReturnDate || productData.currentBooking.returnDate) | date:'dd-MM-yyyy' }}</strong>
+              </div>
+            </div>
+          </div>
+        } @else if (productData.isAvailable) {
+          <div class="ui-card success-card">
+            <h4 class="text-success"><i class="bi bi-check-circle-fill"></i> Product Available</h4>
+            <p class="text-muted m-0">This product and its pair items are completely free during <strong>{{ deliveryDate | date:'dd-MM-yyyy' }}</strong> to <strong>{{ returnDate | date:'dd-MM-yyyy' }}</strong>.</p>
+            <a routerLink="/booking/add" class="btn-primary btn-sm mt-3 inline-flex align-center"><i class="bi bi-plus-circle me-1"></i> Proceed to Create Booking</a>
+          </div>
+        }
+
+      </div>
+
+      <!-- Schedule Table Card -->
+      <div class="ui-card schedule-card">
+        <h4><i class="bi bi-calendar-week-fill text-primary"></i> Complete Booking Schedule History</h4>
+        <p class="text-muted font-sm mb-3">All past, active, and upcoming bookings registered for this product & pair code.</p>
+
+        @if (!productData.allBookings?.length) {
+          <div class="empty-schedule">
+            <i class="bi bi-calendar-x text-muted fs-2"></i>
+            <p class="text-muted m-0">No booking records found for this product code.</p>
+          </div>
+        } @else {
+          <div class="table-responsive">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Booking No</th>
+                  <th>Customer Name</th>
+                  <th>Contact</th>
+                  <th>Booking Date</th>
+                  <th>Delivery Date</th>
+                  <th>Return Date</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (b of productData.allBookings; track $index) {
+                  <tr>
+                    <td><strong class="code-badge">{{ b.BookingNo || b.bookingNo }}</strong></td>
+                    <td><strong>{{ b.CustomerName || b.customerName }}</strong></td>
+                    <td>{{ b.CustomerPhone || b.customerPhone || '-' }}</td>
+                    <td>{{ (b.BookingDate || b.bookingDate) | date:'dd-MM-yyyy' }}</td>
+                    <td class="text-primary font-weight-bold">{{ (b.DeliveryDate || b.deliveryDate) | date:'dd-MM-yyyy' }}</td>
+                    <td class="text-danger font-weight-bold">{{ (b.ReturnDate || b.returnDate) | date:'dd-MM-yyyy' }}</td>
+                    <td>
+                      <span class="status-badge" [class.delivered]="(b.AvailabilityStatus || b.availabilityStatus) === 'Currently Booked'" [class.partial]="(b.AvailabilityStatus || b.availabilityStatus) === 'Upcoming Booking'">
+                        {{ b.AvailabilityStatus || b.availabilityStatus }}
+                      </span>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+      </div>
+
+    </div>
+  }
+</div>

@@ -4,28 +4,27 @@ import { FormsModule } from '@angular/forms';
 import { ApiService } from '../../../core/services/api.service';
 import { AuthService } from '../../../core/services/auth.service';
 import { asArray, normalizeRow, pickField } from '../../../core/models/api.models';
+import { CustomDatePickerComponent } from '../../../shared/components/custom-date-picker/custom-date-picker.component';
 
 @Component({
   selector: 'app-payment-report',
   standalone: true,
-  imports: [CurrencyPipe, DatePipe, FormsModule],
+  imports: [CurrencyPipe, DatePipe, FormsModule, CustomDatePickerComponent],
   template: `
     <div class="page-header flex-between">
       <div><h2>Payment Report</h2><p class="breadcrumb">REPORTS / <strong>Payment Report</strong></p></div>
       <div class="actions no-print">
-        <div class="date-group">
-          <label>From:</label>
-          <input type="date" [(ngModel)]="fromDate" (change)="load()" />
+        <div class="date-group" style="min-width: 140px;">
+          <app-custom-datepicker label="From:" [(ngModel)]="fromDate" (dateChange)="load()"></app-custom-datepicker>
         </div>
-        <div class="date-group">
-          <label>To:</label>
-          <input type="date" [(ngModel)]="toDate" (change)="load()" />
+        <div class="date-group" style="min-width: 140px;">
+          <app-custom-datepicker label="To:" [(ngModel)]="toDate" (dateChange)="load()"></app-custom-datepicker>
         </div>
         <button type="button" class="btn-primary" (click)="load()" [disabled]="loading">Refresh</button>
         <button type="button" class="btn-outline" (click)="print()">Print</button>
       </div>
     </div>
-    <div class="ui-card table-wrap">
+    <div class="ui-card table-card table-wrap">
       <table class="data-table">
         <thead><tr><th>Booking</th><th>Type</th><th>Mode</th><th>Amount</th><th>Date</th></tr></thead>
         <tbody>

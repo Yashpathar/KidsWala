@@ -139,10 +139,46 @@ public class MasterRepository : IMasterRepository
             var p = new DynamicParameters();
             p.Add("RoleName", model.RoleName);
             p.Add("Description", model.Description);
+            p.Add("DataScope", model.DataScope ?? "CompanyAll");
             var response = await BaseDataProvider.QuerySingleAsync<SpResponse>("SP_InsertRole", p);
             result.Success = response?.Success == 1;
             result.Message = response?.Message ?? "Failed";
             result.Data = response;
+        }
+        catch (Exception ex) { result.Message = ex.Message; }
+        return result;
+    }
+
+    public async Task<ApiResult> UpdateRoleAsync(RoleUpdateModel model)
+    {
+        var result = new ApiResult();
+        try
+        {
+            var p = new DynamicParameters();
+            p.Add("RoleID", model.RoleID);
+            p.Add("RoleName", model.RoleName);
+            p.Add("Description", model.Description);
+            p.Add("DataScope", model.DataScope ?? "CompanyAll");
+            p.Add("IsActive", model.IsActive);
+            var response = await BaseDataProvider.QuerySingleAsync<SpResponse>("SP_UpdateRole", p);
+            result.Success = response?.Success == 1;
+            result.Message = response?.Message ?? "Failed";
+            result.Data = response;
+        }
+        catch (Exception ex) { result.Message = ex.Message; }
+        return result;
+    }
+
+    public async Task<ApiResult> DeleteRoleAsync(int roleId)
+    {
+        var result = new ApiResult();
+        try
+        {
+            var p = new DynamicParameters();
+            p.Add("RoleID", roleId);
+            var response = await BaseDataProvider.QuerySingleAsync<SpResponse>("SP_DeleteRole", p);
+            result.Success = response?.Success == 1;
+            result.Message = response?.Message ?? "Failed";
         }
         catch (Exception ex) { result.Message = ex.Message; }
         return result;

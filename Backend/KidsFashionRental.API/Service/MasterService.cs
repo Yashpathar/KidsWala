@@ -19,4 +19,6 @@ public class MasterService : IMasterService
     public Task<ApiResult> GetRoleRightsAsync(int roleId) => _repo.GetRoleRightsAsync(roleId);
     public Task<ApiResult> SaveRoleRightsAsync(RoleRightsSaveModel model) => _repo.SaveRoleRightsAsync(model);
     public Task<ApiResult> InsertRoleAsync(RoleInsertModel model) => _repo.InsertRoleAsync(model);
+    public Task<ApiResult> UpdateRoleAsync(RoleUpdateModel model) => _repo.UpdateRoleAsync(model);
+    public Task<ApiResult> DeleteRoleAsync(int roleId) => _repo.DeleteRoleAsync(roleId);
 }

@@ -14,4 +14,6 @@ public interface IMasterService
     Task<ApiResult> GetRoleRightsAsync(int roleId);
     Task<ApiResult> SaveRoleRightsAsync(RoleRightsSaveModel model);
     Task<ApiResult> InsertRoleAsync(RoleInsertModel model);
+    Task<ApiResult> UpdateRoleAsync(RoleUpdateModel model);
+    Task<ApiResult> DeleteRoleAsync(int roleId);
 }

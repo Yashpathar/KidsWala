@@ -11,13 +11,11 @@
 }
 
 <div class="ui-card filters">
-  <div class="date-group">
-    <label>From:</label>
-    <input type="date" [(ngModel)]="fromDate" (change)="load()" />
+  <div class="date-group" style="min-width: 140px;">
+    <app-custom-datepicker label="From:" [(ngModel)]="fromDate" (dateChange)="load()"></app-custom-datepicker>
   </div>
-  <div class="date-group">
-    <label>To:</label>
-    <input type="date" [(ngModel)]="toDate" (change)="load()" />
+  <div class="date-group" style="min-width: 140px;">
+    <app-custom-datepicker label="To:" [(ngModel)]="toDate" (dateChange)="load()"></app-custom-datepicker>
   </div>
   <input [(ngModel)]="search" placeholder="Search booking no or customer..." (keyup.enter)="load()" />
   <select [(ngModel)]="status" (change)="load()">
@@ -37,23 +35,63 @@
   <table class="data-table">
     <thead>
       <tr>
-        <th>Booking No</th><th>Customer</th><th>Delivery</th><th>Return</th>
-        <th class="money">Rent</th><th class="money">Deposit</th><th class="money">Total</th>
-        <th class="money">Advance</th><th class="money">Due</th><th>Status</th><th>Payment</th><th>Actions</th>
+        <th>Booking No</th>
+        <th>Product Code</th>
+        <th>Customer</th>
+        <th>Delivery</th>
+        <th>Return</th>
+        <th class="money">Rent</th>
+        <th class="money">Deposit</th>
+        <th class="money">Total</th>
+        <th class="money">Advance</th>
+        <th class="money">Due</th>
+        <th>Status</th>
+        <th>Payment</th>
+        <th>Actions</th>
       </tr>
     </thead>
     <tbody>
       @if (loading) {
-        <tr><td colspan="12" class="empty-row">Loading...</td></tr>
+        <tr><td colspan="13" class="empty-row">Loading...</td></tr>
       } @else if (!bookings.length) {
-        <tr><td colspan="12" class="empty-row">No bookings found</td></tr>
+        <tr><td colspan="13" class="empty-row">No bookings found</td></tr>
       }
       @for (b of bookings; track b.bookingID) {
         <tr>
           <td><strong>{{ b.bookingNo }}</strong></td>
+          <td class="product-cell" (click)="openProductDetails(b)">
+            <div class="product-codes-wrapper" title="Click to view product details">
+              @for (code of getProductCodesList(b.productCode).slice(0, 1); track $index) {
+                <span class="code-chip"><i class="bi bi-upc-scan"></i> {{ code }}</span>
+              }
+              @if (getProductCodesList(b.productCode).length > 1) {
+                <span class="code-chip-more"><i class="bi bi-chevron-down"></i> +{{ getProductCodesList(b.productCode).length - 1 }} More</span>
+              }
+              @if (!b.productCode) {
+                <span class="code-chip"><i class="bi bi-box-seam"></i> View Product</span>
+              }
+            </div>
+            @if (b.productName) {
+              <div class="product-sub-name">{{ formatProductNames(b.productName) }}</div>
+            }
+          </td>
           <td>{{ b.customerName }}</td>
-          <td>{{ b.deliveryDate | date:'dd-MM-yyyy' }}</td>
-          <td>{{ b.returnDate | date:'dd-MM-yyyy' }}</td>
+          <td>
+            {{ b.deliveryDate | date:'dd-MM-yyyy' }}
+            @if (b.deliverySession) {
+              <span class="session-badge" [class.day]="b.deliverySession === 'Day'" [class.night]="b.deliverySession === 'Night'">
+                {{ b.deliverySession === 'Day' ? '☀️ Day' : '🌙 Night' }}
+              </span>
+            }
+          </td>
+          <td>
+            {{ b.returnDate | date:'dd-MM-yyyy' }}
+            @if (b.returnSession) {
+              <span class="session-badge" [class.day]="b.returnSession === 'Day'" [class.night]="b.returnSession === 'Night'">
+                {{ b.returnSession === 'Day' ? '☀️ Day' : '🌙 Night' }}
+              </span>
+            }
+          </td>
           <td class="money">{{ b.totalRentAmount | currency:'INR' }}</td>
           <td class="money">{{ b.depositAmount | currency:'INR' }}</td>
           <td class="money"><strong>{{ b.totalAmount | currency:'INR' }}</strong></td>
@@ -83,7 +121,7 @@
     @if (bookings.length) {
       <tfoot>
         <tr class="table-footer">
-          <td colspan="4"><strong>Page Totals</strong></td>
+          <td colspan="5"><strong>Page Totals</strong></td>
           <td class="money"><strong>{{ footerTotals.rent | currency:'INR' }}</strong></td>
           <td class="money"><strong>{{ footerTotals.deposit | currency:'INR' }}</strong></td>
           <td class="money"><strong>{{ footerTotals.total | currency:'INR' }}</strong></td>
@@ -105,6 +143,31 @@
         <span class="status-badge" [class]="statusClass(b.bookingStatus)">{{ b.bookingStatus }}</span>
       </div>
       <p>{{ b.customerName }}</p>
+      <div class="card-dates">
+        <div class="date-item">
+          <small>Delivery</small>
+          <strong>
+            {{ b.deliveryDate | date:'dd-MM-yyyy' }}
+            <span class="session-badge" [class.day]="b.deliverySession === 'Day'" [class.night]="b.deliverySession === 'Night'">
+              {{ b.deliverySession === 'Day' ? '☀️' : '🌙' }}
+            </span>
+          </strong>
+        </div>
+        <div class="date-item">
+          <small>Return</small>
+          <strong>
+            {{ b.returnDate | date:'dd-MM-yyyy' }}
+            <span class="session-badge" [class.day]="b.returnSession === 'Day'" [class.night]="b.returnSession === 'Night'">
+              {{ b.returnSession === 'Day' ? '☀️' : '🌙' }}
+            </span>
+          </strong>
+        </div>
+      </div>
+      <div class="mb-2">
+        <button type="button" class="btn-product-code-chip" (click)="openProductDetails(b)">
+          <i class="bi bi-upc-scan"></i> {{ b.productCode || 'View Product' }}
+        </button>
+      </div>
       <div class="card-meta">
         <span>Total {{ b.totalAmount | currency:'INR' }}</span>
         <span>Due {{ b.remainingAmount | currency:'INR' }}</span>
@@ -125,8 +188,52 @@
 @if (deliveryOpen && activeBooking) {
   <div class="app-modal-backdrop" (click)="closeModals()">
     <div class="app-modal-panel ui-card flow-modal" (click)="$event.stopPropagation()">
-      <h3><i class="bi bi-truck"></i> Delivery Payment</h3>
+      <h3><i class="bi bi-truck"></i> Process Delivery Payment</h3>
       <p class="sub">{{ activeBooking.bookingNo }} · {{ activeBooking.customerName }}</p>
+
+      <!-- Booked Items Preview inside Delivery Modal -->
+      @if (activeBookingDetails?.items?.length) {
+        <div class="delivery-items-list">
+          @for (item of activeBookingDetails.items; track $index) {
+            <div class="delivery-item-card">
+              <div class="item-img-col">
+                @if (item.productImage || item.ProductImage) {
+                  <img [src]="productImageUrl(item.productImage || item.ProductImage)" alt="" />
+                } @else {
+                  <span class="img-ph"><i class="bi bi-image"></i></span>
+                }
+              </div>
+              <div class="item-info-col">
+                <div class="item-code-name">
+                  <strong class="code-badge">{{ item.productCode || item.ProductCode }}</strong>
+                  <span class="item-name">{{ item.productName || item.ProductName }}</span>
+                </div>
+                <div class="item-details-pills mt-1">
+                  @if (item.topSize || item.TopSize || item.bottomSize || item.BottomSize || item.topCode || item.TopCode || item.bottomCode || item.BottomCode) {
+                    <span class="blazer-badge">
+                      <i class="bi bi-tag-fill me-1"></i>Blazer: <b>{{ item.topSize || item.TopSize || item.size || item.Size || '-' }}</b>
+                      <small>({{ item.topCode || item.TopCode || item.productCode || item.ProductCode }})</small>
+                    </span>
+                    <span class="pant-badge">
+                      <i class="bi bi-tag-fill me-1"></i>Pant: <b>{{ item.bottomSize || item.BottomSize || item.size || item.Size || '-' }}</b>
+                      <small>({{ item.bottomCode || item.BottomCode || (item.productCode || item.ProductCode) + '-P' }})</small>
+                    </span>
+                  } @else {
+                    <span class="single-size-badge">Size: <b>{{ item.size || item.Size || '-' }}</b></span>
+                  }
+                  @if (item.color || item.Color) {
+                    <span class="color-badge"><i class="bi bi-palette me-1"></i>{{ item.color || item.Color }}</span>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      } @else if (!activeBookingDetails) {
+        <div class="delivery-items-loading text-center p-2 text-muted mb-2" style="font-size: 0.85rem;">
+          <i class="bi bi-arrow-repeat spin me-1"></i> Loading product details...
+        </div>
+      }
 
       <div class="flow-breakdown">
         <div class="fb-row"><span>Remaining Rent</span><strong>{{ deliveryRentPart | currency:'INR' }}</strong></div>
@@ -178,8 +285,7 @@
         }
       </div>
 
-      <label>Actual Return Date <small>(can be before scheduled date)</small></label>
-      <input type="date" [(ngModel)]="returnDate" (ngModelChange)="onReturnDateChange()" />
+      <app-custom-datepicker label="Actual Return Date (can be before scheduled date)" [(ngModel)]="returnDate" (dateChange)="onReturnDateChange()"></app-custom-datepicker>
 
       <div class="flow-breakdown">
         <div class="fb-row"><span>Deposit Held</span><strong>{{ activeBooking.depositAmount | currency:'INR' }}</strong></div>
@@ -224,6 +330,102 @@
         <button type="button" class="btn-primary" (click)="confirmReturn()" [disabled]="flowSaving">
           {{ flowSaving ? 'Processing...' : 'Confirm Return' }}
         </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Product Details Modal Popup -->
+@if (productDetailsOpen && activeBooking) {
+  <div class="app-modal-backdrop" (click)="closeModals()">
+    <div class="app-modal-panel ui-card product-details-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="bi bi-box-seam me-2"></i> Booking Product Details</h3>
+        <button type="button" class="btn-close-modal" (click)="closeModals()" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+      </div>
+
+      <div class="booking-meta-bar">
+        <div class="meta-item"><span>Booking No:</span> <strong>{{ activeBooking.bookingNo }}</strong></div>
+        <div class="meta-item"><span>Customer:</span> <strong>{{ activeBooking.customerName }}</strong></div>
+        <div class="meta-item">
+          <span>Dates:</span> 
+          <strong>
+            {{ activeBooking.deliveryDate | date:'dd-MM-yyyy' }} ({{ activeBooking.deliverySession || 'Day' }})
+            to 
+            {{ activeBooking.returnDate | date:'dd-MM-yyyy' }} ({{ activeBooking.returnSession || 'Day' }})
+          </strong>
+        </div>
+        <div class="meta-item"><span>Status:</span> <span class="status-badge" [class]="statusClass(activeBooking.bookingStatus)">{{ activeBooking.bookingStatus }}</span></div>
+      </div>
+
+      <div class="modal-body-content">
+        @if (productDetailsLoading) {
+          <div class="loading-box"><i class="bi bi-arrow-repeat spin"></i> Loading product details...</div>
+        } @else if (activeBookingDetails?.items?.length) {
+          <div class="table-responsive modal-items-wrap">
+            <table class="data-table modal-table">
+              <thead>
+                <tr>
+                  <th style="width:40px;">#</th>
+                  <th style="width:60px;">Image</th>
+                  <th>Product Code</th>
+                  <th>Product Name</th>
+                  <th>Size / Pair Details</th>
+                  <th>Color</th>
+                  <th class="money">Rent</th>
+                  <th class="money">Deposit</th>
+                  <th class="money">Final Rent</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of activeBookingDetails.items; track $index) {
+                  <tr>
+                    <td>{{ $index + 1 }}</td>
+                    <td class="img-cell">
+                      @if (item.productImage || item.ProductImage) {
+                        <img [src]="productImageUrl(item.productImage || item.ProductImage)" alt="" />
+                      } @else {
+                        <span class="img-ph"><i class="bi bi-image"></i></span>
+                      }
+                    </td>
+                    <td>
+                      <strong class="code-badge">{{ item.productCode || item.ProductCode }}</strong>
+                    </td>
+                    <td><strong>{{ item.productName || item.ProductName }}</strong></td>
+                    <td>
+                      @if (item.topSize || item.TopSize || item.bottomSize || item.BottomSize || item.topCode || item.TopCode || item.bottomCode || item.BottomCode) {
+                        <div class="pair-sizes-badge">
+                          <span class="blazer-badge">
+                            <i class="bi bi-tag-fill me-1"></i>Blazer: <b>{{ item.topSize || item.TopSize || item.size || item.Size || '-' }}</b>
+                            <small>({{ item.topCode || item.TopCode || item.productCode || item.ProductCode }})</small>
+                          </span>
+                          <span class="pant-badge">
+                            <i class="bi bi-tag-fill me-1"></i>Pant: <b>{{ item.bottomSize || item.BottomSize || item.size || item.Size || '-' }}</b>
+                            <small>({{ item.bottomCode || item.BottomCode || (item.productCode || item.ProductCode) + '-P' }})</small>
+                          </span>
+                        </div>
+                      } @else {
+                        <div class="pair-sizes-badge">
+                          <span class="single-size-badge">Size: <b>{{ item.size || item.Size || '-' }}</b></span>
+                        </div>
+                      }
+                    </td>
+                    <td>{{ item.color || item.Color || '-' }}</td>
+                    <td class="money">{{ (item.rentAmount || item.RentAmount || 0) | currency:'INR' }}</td>
+                    <td class="money">{{ (item.depositAmount || item.DepositAmount || 0) | currency:'INR' }}</td>
+                    <td class="money"><strong>{{ (item.finalRentAmount || item.FinalRentAmount || 0) | currency:'INR' }}</strong></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <p class="empty-modal-items">No product items found for this booking.</p>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-primary" (click)="closeModals()">Close</button>
       </div>
     </div>
   </div>

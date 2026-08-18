@@ -7,11 +7,14 @@ import { BookingReturnService } from '../../../core/services/booking-return.serv
 import { AlertService } from '../../../core/services/alert.service';
 import { computeReturnRefund } from '../../../core/utils/booking-return.util';
 import { normalizeRow, normalizeRows, pickField, pickId } from '../../../core/models/api.models';
+import { environment } from '../../../../environments/environment';
+import { CustomDatePickerComponent } from '../../../shared/components/custom-date-picker/custom-date-picker.component';
 
 export interface ReturnReportRow {
   bookingID: number;
   bookingNo: string;
   customerName: string;
+  productCode?: string;
   productName: string;
   returnDate: string;
   depositAmount: number;
@@ -23,12 +26,14 @@ export interface ReturnReportRow {
   finalProfitAmount: number;
   bookingStatus: string;
   actualReturnDate?: string;
+  deliverySession?: string;
+  returnSession?: string;
 }
 
 @Component({
   selector: 'app-return-report',
   standalone: true,
-  imports: [CurrencyPipe, DatePipe, FormsModule],
+  imports: [CurrencyPipe, DatePipe, FormsModule, CustomDatePickerComponent],
   templateUrl: './return-report.component.html',
   styleUrl: './return-report.component.scss'
 })
@@ -46,7 +51,10 @@ export class ReturnReportComponent implements OnInit {
   messageType: 'success' | 'error' = 'success';
 
   returnOpen = false;
+  productDetailsOpen = false;
   activeRow: ReturnReportRow | null = null;
+  activeBookingDetails: any = null;
+  productDetailsLoading = false;
   flowSaving = false;
   returnDate = '';
   scheduledReturnDate = '';
@@ -107,6 +115,7 @@ export class ReturnReportComponent implements OnInit {
       bookingID: pickId(r, 'bookingID', 'BookingID'),
       bookingNo: String(pickField<string>(r, 'bookingNo', 'BookingNo') ?? ''),
       customerName: String(pickField<string>(r, 'customerName', 'CustomerName') ?? ''),
+      productCode: String(pickField<string>(r, 'productCode', 'ProductCode') ?? ''),
       productName: String(pickField<string>(r, 'productName', 'ProductName') ?? ''),
       returnDate: String(pickField(r, 'returnDate', 'ReturnDate') ?? ''),
       depositAmount: Number(
@@ -119,12 +128,33 @@ export class ReturnReportComponent implements OnInit {
       finalRefundAmount: Number(pickField(r, 'finalRefundAmount', 'FinalRefundAmount') ?? 0),
       finalProfitAmount: Number(pickField(r, 'finalProfitAmount', 'FinalProfitAmount') ?? 0),
       bookingStatus: String(pickField<string>(r, 'bookingStatus', 'BookingStatus') ?? ''),
-      actualReturnDate: pickField<string>(r, 'actualReturnDate', 'ActualReturnDate')
+      actualReturnDate: pickField<string>(r, 'actualReturnDate', 'ActualReturnDate'),
+      deliverySession: String(pickField<string>(r, 'deliverySession', 'DeliverySession') ?? ''),
+      returnSession: String(pickField<string>(r, 'returnSession', 'ReturnSession') ?? '')
     };
   }
 
   canProcess(r: ReturnReportRow) {
     return r.bookingStatus === 'Delivered';
+  }
+
+  openProductDetails(r: ReturnReportRow) {
+    this.activeRow = r;
+    this.productDetailsOpen = true;
+    this.productDetailsLoading = true;
+    this.activeBookingDetails = null;
+
+    this.api.get<any>(`/booking/${r.bookingID}`).subscribe({
+      next: res => {
+        this.productDetailsLoading = false;
+        if (res.success && res.data) {
+          this.activeBookingDetails = res.data;
+        }
+      },
+      error: () => {
+        this.productDetailsLoading = false;
+      }
+    });
   }
 
   openReturn(r: ReturnReportRow) {
@@ -137,7 +167,19 @@ export class ReturnReportComponent implements OnInit {
     this.returnMode = 'Cash';
     this.returnTxn = '';
     this.returnOpen = true;
+    this.activeBookingDetails = null;
     this.recalcReturn();
+    this.loadReturnDetail(r.bookingID);
+  }
+
+  private loadReturnDetail(bookingId: number) {
+    this.api.get<any>(`/booking/${bookingId}`).subscribe({
+      next: res => {
+        if (res.success && res.data) {
+          this.activeBookingDetails = res.data;
+        }
+      }
+    });
   }
 
   onReturnDateChange() {
@@ -181,7 +223,16 @@ export class ReturnReportComponent implements OnInit {
 
   closeReturn() {
     this.returnOpen = false;
+    this.productDetailsOpen = false;
     this.activeRow = null;
+    this.activeBookingDetails = null;
+  }
+
+  productImageUrl(path?: string): string {
+    if (!path) return '';
+    if (path.startsWith('http')) return path;
+    const base = environment.apiUrl.replace(/\/api\/?$/, '');
+    return `${base}${path.startsWith('/') ? path : '/' + path}`;
   }
 
   confirmReturn() {
@@ -233,6 +284,18 @@ export class ReturnReportComponent implements OnInit {
       Returned: 'returned',
       'Late Returned': 'late'
     }[s] || 'booked';
+  }
+
+  formatProductNames(nameStr?: string): string {
+    if (!nameStr) return '—';
+    const names = nameStr.split(',').map(s => s.trim()).filter(Boolean);
+    const unique = Array.from(new Set(names));
+    return unique.join(', ');
+  }
+
+  getProductCodesList(codeStr?: string): string[] {
+    if (!codeStr) return [];
+    return codeStr.split(',').map(s => s.trim()).filter(Boolean);
   }
 
   private today() {

@@ -27,15 +27,15 @@
   <!-- Platform Admin Stats (Super Admin) -->
   @if (auth.isPlatformAdmin() && counts['totalCompanies']) {
     <div class="kpi-grid platform-kpi mt-3">
-      <div class="kpi-card ui-card">
-        <div class="kpi-icon purple"><i class="bi bi-building"></i></div>
+      <div class="kpi-card ui-card operational">
+        <div class="kpi-icon blue"><i class="bi bi-building"></i></div>
         <div class="kpi-body">
           <span>Total Companies</span>
           <h3>{{ counts['totalCompanies'] }}</h3>
           <em class="sub positive">Registered</em>
         </div>
       </div>
-      <div class="kpi-card ui-card">
+      <div class="kpi-card ui-card operational">
         <div class="kpi-icon blue"><i class="bi bi-shop"></i></div>
         <div class="kpi-body">
           <span>Active Branches</span>
@@ -43,8 +43,8 @@
           <em class="sub accent">Across system</em>
         </div>
       </div>
-      <div class="kpi-card ui-card">
-        <div class="kpi-icon green"><i class="bi bi-people-fill"></i></div>
+      <div class="kpi-card ui-card operational">
+        <div class="kpi-icon blue"><i class="bi bi-people-fill"></i></div>
         <div class="kpi-body">
           <span>Total Users</span>
           <h3>{{ counts['totalUsers'] }}</h3>
@@ -75,8 +75,8 @@
   } @else {
     <!-- Primary KPI Grid -->
     <div class="kpi-grid">
-      <div class="kpi-card ui-card hover-glow">
-        <div class="kpi-icon purple"><i class="bi bi-journal-check"></i></div>
+      <div class="kpi-card ui-card operational">
+        <div class="kpi-icon blue"><i class="bi bi-journal-check"></i></div>
         <div class="kpi-body">
           <span>Total Bookings</span>
           <h3>{{ counts['totalBookings'] || 0 }}</h3>
@@ -85,7 +85,7 @@
         <i class="bi bi-arrow-up-right kpi-arrow"></i>
       </div>
 
-      <div class="kpi-card ui-card hover-glow">
+      <div class="kpi-card ui-card operational">
         <div class="kpi-icon blue"><i class="bi bi-truck"></i></div>
         <div class="kpi-body">
           <span>Today Delivery</span>
@@ -95,8 +95,8 @@
         <i class="bi bi-arrow-up-right kpi-arrow"></i>
       </div>
 
-      <div class="kpi-card ui-card hover-glow">
-        <div class="kpi-icon green"><i class="bi bi-arrow-return-left"></i></div>
+      <div class="kpi-card ui-card operational">
+        <div class="kpi-icon blue"><i class="bi bi-arrow-return-left"></i></div>
         <div class="kpi-body">
           <span>Today Return</span>
           <h3>{{ counts['todayReturns'] || 0 }}</h3>
@@ -106,7 +106,7 @@
       </div>
 
       @if (!auth.isBranchStaff()) {
-        <div class="kpi-card ui-card hover-glow">
+        <div class="kpi-card ui-card due-money">
           <div class="kpi-icon red"><i class="bi bi-currency-rupee"></i></div>
           <div class="kpi-body">
             <span>Pending Payments</span>
@@ -138,7 +138,7 @@
           <i class="bi bi-arrow-up-right kpi-arrow"></i>
         </div>
 
-        <div class="kpi-card ui-card hover-glow">
+        <div class="kpi-card ui-card positive-money">
           <div class="kpi-icon emerald"><i class="bi bi-graph-up-arrow"></i></div>
           <div class="kpi-body">
             <span>Total Income</span>
@@ -148,7 +148,7 @@
           <i class="bi bi-arrow-up-right kpi-arrow"></i>
         </div>
 
-        <div class="kpi-card ui-card hover-glow">
+        <div class="kpi-card ui-card warning-money">
           <div class="kpi-icon orange"><i class="bi bi-receipt"></i></div>
           <div class="kpi-body">
             <span>Total Expenses</span>
@@ -158,7 +158,7 @@
           <i class="bi bi-arrow-up-right kpi-arrow"></i>
         </div>
 
-        <div class="kpi-card ui-card hover-glow">
+        <div class="kpi-card ui-card positive-money">
           <div class="kpi-icon purple"><i class="bi bi-piggy-bank-fill"></i></div>
           <div class="kpi-body">
             <span>Net Profit</span>
@@ -169,8 +169,8 @@
         </div>
       }
 
-      <div class="kpi-card ui-card hover-glow">
-        <div class="kpi-icon cyan"><i class="bi bi-bag-check-fill"></i></div>
+      <div class="kpi-card ui-card operational">
+        <div class="kpi-icon blue"><i class="bi bi-bag-check-fill"></i></div>
         <div class="kpi-body">
           <span>Available Products</span>
           <h3>{{ counts['availableProducts'] || 0 }}</h3>
@@ -198,21 +198,17 @@
         </div>
       </div>
 
-      <div class="ui-card chart-card chart-donut">
+      <div class="ui-card chart-card chart-status-bar">
         <div class="chart-head">
           <div class="title-wrap">
-            <i class="bi bi-pie-chart-fill header-icon"></i>
+            <i class="bi bi-bar-chart-fill header-icon"></i>
             <div>
               <h4>Booking Overview</h4>
-              <small class="text-muted">Status breakdown</small>
+              <small class="text-muted">Status breakdown · {{ statusTotal }} total</small>
             </div>
           </div>
         </div>
-        <div class="donut-wrap">
-          <div class="donut-center">
-            <strong>{{ statusTotal }}</strong>
-            <span>Total Bookings</span>
-          </div>
+        <div class="chart-canvas">
           <canvas baseChart [data]="statusChart.data" [options]="statusChart.options" [type]="statusChart.type"></canvas>
         </div>
       </div>

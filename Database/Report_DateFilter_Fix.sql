@@ -34,6 +34,12 @@ BEGIN
         B.BookingNo,
         C.FullName AS CustomerName,
         STUFF((
+            SELECT ', ' + BD.ProductCode
+            FROM tblBookingDetails BD
+            WHERE BD.BookingID = B.BookingID
+            FOR XML PATH(''), TYPE
+        ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS ProductCode,
+        STUFF((
             SELECT ', ' + BD.ProductName
             FROM tblBookingDetails BD
             WHERE BD.BookingID = B.BookingID
@@ -91,6 +97,12 @@ BEGIN
         B.BookingID,
         B.BookingNo,
         C.FullName AS CustomerName,
+        STUFF((
+            SELECT ', ' + BD.ProductCode
+            FROM tblBookingDetails BD
+            WHERE BD.BookingID = B.BookingID
+            FOR XML PATH(''), TYPE
+        ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS ProductCode,
         STUFF((
             SELECT ', ' + BD.ProductName
             FROM tblBookingDetails BD
@@ -174,11 +186,26 @@ CREATE OR ALTER PROCEDURE SP_GetAllBookings
 AS
 BEGIN
     SET NOCOUNT ON;
+    SET ANSI_NULLS ON;
+    SET QUOTED_IDENTIFIER ON;
 
     IF @FromDate IS NOT NULL AND @FromDate < '1753-01-01' SET @FromDate = NULL;
     IF @ToDate IS NOT NULL AND @ToDate < '1753-01-01' SET @ToDate = NULL;
 
-    SELECT B.BookingID, B.BookingNo, C.FullName AS CustomerName, B.BookingDate, B.DeliveryDate, B.ReturnDate,
+    SELECT B.BookingID, B.BookingNo, C.FullName AS CustomerName,
+           STUFF((
+               SELECT ', ' + BD.ProductCode
+               FROM tblBookingDetails BD
+               WHERE BD.BookingID = B.BookingID
+               FOR XML PATH(''), TYPE
+           ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS ProductCode,
+           STUFF((
+               SELECT ', ' + BD.ProductName
+               FROM tblBookingDetails BD
+               WHERE BD.BookingID = B.BookingID
+               FOR XML PATH(''), TYPE
+           ).value('.', 'NVARCHAR(MAX)'), 1, 2, '') AS ProductName,
+           B.BookingDate, B.DeliveryDate, B.ReturnDate,
            B.TotalAmount, B.TotalRentAmount,
            CAST(ISNULL(B.DepositAmount, 0) AS DECIMAL(18,2)) AS DepositAmount,
            ISNULL(B.ExtraChargePerDay, 150) AS ExtraChargePerDay,
@@ -192,7 +219,7 @@ BEGIN
       AND (@BranchID IS NULL OR @BranchID = 0 OR B.BranchID = @BranchID)
       AND (@FilterUserID IS NULL OR B.BookingCreatedBy = @FilterUserID)
       AND (@Status IS NULL OR @Status = '' OR B.BookingStatus = @Status)
-      AND (@Search IS NULL OR @Search = '' OR B.BookingNo LIKE '%'+@Search+'%' OR C.FullName LIKE '%'+@Search+'%')
+      AND (@Search IS NULL OR @Search = '' OR B.BookingNo LIKE '%'+@Search+'%' OR C.FullName LIKE '%'+@Search+'%' OR EXISTS(SELECT 1 FROM tblBookingDetails BD WHERE BD.BookingID = B.BookingID AND BD.ProductCode LIKE '%'+@Search+'%'))
       AND (@FromDate IS NULL OR CAST(B.BookingDate AS DATE) >= @FromDate)
       AND (@ToDate IS NULL OR CAST(B.BookingDate AS DATE) <= @ToDate)
     ORDER BY B.BookingID DESC;

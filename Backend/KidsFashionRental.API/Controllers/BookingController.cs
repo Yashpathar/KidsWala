@@ -51,6 +51,10 @@ public class BookingController : ControllerBase
     public async Task<IActionResult> CheckAvailability([FromQuery] AvailabilityRequestModel model)
         => Ok(await _service.CheckAvailabilityAsync(model));
 
+    [HttpGet("product-status/{code}")]
+    public async Task<IActionResult> GetProductStatusByCode(string code, [FromQuery] DateTime? deliveryDate = null, [FromQuery] DateTime? returnDate = null)
+        => Ok(await _service.GetProductStatusByCodeAsync(code, deliveryDate, returnDate));
+
     [HttpPost("payment")]
     public async Task<IActionResult> AddPayment([FromBody] PaymentCreateModel model)
         => Ok(await _service.AddPaymentAsync(model));

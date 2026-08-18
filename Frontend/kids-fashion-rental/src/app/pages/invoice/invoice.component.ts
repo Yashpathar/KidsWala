@@ -71,7 +71,7 @@ export class InvoiceComponent implements OnInit {
     const ret = pickField<string>(b, 'returnDate', 'ReturnDate');
     const advance = pickField(b, 'advanceAmount', 'AdvanceAmount');
     const pending = pickField(b, 'remainingAmount', 'RemainingAmount');
-    const cName = this.company?.companyName || this.auth.currentUser()?.companyName || 'Kids Fashion Rental Wear';
+    const cName = this.company?.companyName || this.auth.currentUser()?.companyName || 'RentRiwaaz Fashion Rental';
     this.whatsappMsg = `Hello ${name},\n\nYour Booking Details:\nBooking No: ${bookingNo}\nRental Days: ${rentDays}\nDelivery: ${delivery ? new Date(delivery).toLocaleDateString('en-IN') : ''}\nReturn: ${ret ? new Date(ret).toLocaleDateString('en-IN') : ''}\nAdvance Paid: ₹${advance}\nPending: ₹${pending}\n\nThank You\n${cName}`;
   }
 

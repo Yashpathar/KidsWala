@@ -7,8 +7,8 @@
 .dashboard-hero {
   padding: 1.5rem 1.75rem;
   margin-bottom: 1.5rem;
-  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 50%, #f5f3ff 100%);
-  border: 1px solid rgba(226, 232, 240, 0.9);
+  background: linear-gradient(135deg, #ffffff 0%, #fdfcfd 50%, var(--primary-soft) 100%);
+  border: 1px solid rgba(220, 151, 80, 0.15);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -25,7 +25,7 @@
     width: 220px;
     height: 220px;
     border-radius: 50%;
-    background: radial-gradient(circle, rgba(168, 85, 247, 0.1) 0%, rgba(99, 102, 241, 0) 70%);
+    background: radial-gradient(circle, rgba(220, 151, 80, 0.1) 0%, rgba(30, 38, 64, 0) 70%);
     pointer-events: none;
   }
 }
@@ -156,18 +156,34 @@
 }
 
 .kpi-card {
-  padding: 1.25rem 1.35rem;
+  padding: 1.35rem 1.5rem;
   display: flex;
   align-items: center;
-  gap: 1rem;
+  gap: 1.15rem;
   position: relative;
   background: #ffffff;
   border-radius: var(--radius-lg);
+  border: 1px solid var(--border-light);
+  overflow: hidden; /* Clips the pseudo-element to card rounded corners */
   transition: all var(--transition);
+  box-shadow: var(--shadow-sm);
+
+  /* The left accent bar */
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: var(--primary); /* Defaults to gold */
+    transition: all var(--transition);
+  }
 
   &:hover {
     transform: translateY(-4px);
-    box-shadow: var(--shadow-lg);
+    box-shadow: 0 12px 20px -8px rgba(220, 151, 80, 0.12), 0 4px 12px rgba(15, 23, 42, 0.03);
+    border-color: rgba(220, 151, 80, 0.2);
 
     .kpi-arrow {
       transform: translate(2px, -2px);
@@ -175,14 +191,36 @@
     }
   }
 
+  /* Specific border colors for visual categorization */
+  &.operational {
+    &::before { background: var(--secondary); } /* Navy accent */
+    .kpi-icon { background: rgba(30, 38, 64, 0.05); color: var(--secondary); }
+  }
+  &.positive-money {
+    &::before { background: #10b981; } /* Emerald green accent */
+    .kpi-icon { background: rgba(16, 185, 129, 0.06); color: #10b981; }
+  }
+  &.due-money {
+    &::before { background: #ef4444; } /* Red accent */
+    .kpi-icon { background: rgba(239, 68, 68, 0.06); color: #ef4444; }
+  }
+  &.warning-money {
+    &::before { background: #ea580c; } /* Orange accent */
+    .kpi-icon { background: rgba(234, 88, 12, 0.06); color: #ea580c; }
+  }
+
   &.highlight-deposit {
-    border: 1px solid #c7d2fe;
-    background: linear-gradient(135deg, #ffffff 0%, #f5f3ff 100%);
+    border-color: var(--primary-light);
+    background: linear-gradient(135deg, #ffffff 0%, var(--primary-soft) 100%);
+    &::before { background: var(--primary); }
+    .kpi-icon { background: rgba(220, 151, 80, 0.08); color: var(--primary); }
   }
 
   &.highlight-refund {
-    border: 1px solid #bbf7d0;
+    border-color: #bbf7d0;
     background: linear-gradient(135deg, #ffffff 0%, #f0fdf4 100%);
+    &::before { background: #10b981; }
+    .kpi-icon { background: rgba(16, 185, 129, 0.06); color: #10b981; }
   }
 }
 
@@ -194,17 +232,20 @@
   place-items: center;
   font-size: 1.35rem;
   flex-shrink: 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.02);
+  transition: all var(--transition);
+  background: var(--primary-soft);
+  color: var(--primary);
 
-  &.purple { background: #ede9fe; color: #6c3bff; }
-  &.blue { background: #dbeafe; color: #2563eb; }
-  &.green { background: #dcfce7; color: #16a34a; }
-  &.red { background: #fee2e2; color: #dc2626; }
-  &.orange { background: #ffedd5; color: #ea580c; }
-  &.teal { background: #ccfbf1; color: #0d9488; }
-  &.indigo { background: #e0e7ff; color: #4338ca; }
-  &.emerald { background: #d1fae5; color: #059669; }
-  &.cyan { background: #cffafe; color: #0891b2; }
+  &.purple { background: rgba(220, 151, 80, 0.08); color: var(--primary); }
+  &.blue { background: rgba(30, 38, 64, 0.05); color: var(--secondary); }
+  &.green { background: rgba(16, 185, 129, 0.06); color: #10b981; }
+  &.red { background: rgba(239, 68, 68, 0.06); color: #ef4444; }
+  &.orange { background: rgba(234, 88, 12, 0.06); color: #ea580c; }
+  &.teal { background: rgba(13, 148, 136, 0.06); color: #0d9488; }
+  &.indigo { background: rgba(67, 56, 202, 0.06); color: #4338ca; }
+  &.emerald { background: rgba(5, 150, 105, 0.06); color: #059669; }
+  &.cyan { background: rgba(8, 145, 178, 0.06); color: #0891b2; }
 }
 
 .kpi-body {
@@ -316,45 +357,12 @@
   position: relative;
 }
 
-.donut-wrap {
-  height: 270px;
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
-  canvas { max-height: 250px; }
-}
-
-.donut-center {
-  position: absolute;
-  left: 28%;
-  top: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-  pointer-events: none;
-  z-index: 1;
-
-  strong {
-    display: block;
-    font-size: 1.75rem;
-    font-weight: 800;
-    color: var(--text);
-    line-height: 1;
-    font-family: 'Plus Jakarta Sans', sans-serif;
+/* Status Bar Chart custom styling */
+.chart-status-bar {
+  .chart-canvas {
+    height: 270px;
+    position: relative;
   }
-
-  span {
-    font-size: 0.75rem;
-    font-weight: 600;
-    color: var(--text-muted);
-    text-transform: uppercase;
-    letter-spacing: 0.04em;
-  }
-}
-
-@media (max-width: 768px) {
-  .donut-center { left: 50%; }
 }
 
 /* Top Products list */

@@ -12,10 +12,6 @@ import { environment } from '../../../../environments/environment';
 
 export interface BatchItem {
   productCode: string;
-  topCode: string;
-  bottomCode: string;
-  topSize: string;
-  bottomSize: string;
   sizeID: number | null;
   colorID: number | null;
 }
@@ -52,6 +48,11 @@ export class AddProductComponent implements OnInit {
   messageType: 'success' | 'error' = 'success';
   loading: boolean = false;
   saving: boolean = false;
+  uploadingImage: boolean = false;
+  showImageLightbox: boolean = false;
+
+  applyImageToGroup: boolean = false;
+  applyPriceToGroup: boolean = false;
 
   form: any = {};
   selectedSizeIds: number[] = [];
@@ -109,7 +110,7 @@ export class AddProductComponent implements OnInit {
       description: '',
       productImage: '',
       isAvailable: true,
-      isFullSet: true,
+      isFullSet: false,
       topCode: '',
       topSize: '',
       bottomCode: '',
@@ -117,20 +118,16 @@ export class AddProductComponent implements OnInit {
     };
   }
 
-  formatCodePair(rawPrefix: string, sizeName: string) {
+  formatCode(rawPrefix: string, sizeName: string): string {
     let clean = (rawPrefix || 'BL-12').trim().toUpperCase().replace(/[-P]+$/g, '');
     if (!clean) clean = 'BL-12';
     const sz = String(sizeName || '02').trim();
-
-    return {
-      topCode: `${clean}-${sz}`,
-      bottomCode: `${clean}P-${sz}`
-    };
+    return `${clean}-${sz}`;
   }
 
   buildEmptyBatchForm() {
-    const pair1 = this.formatCodePair('BL-12', '02');
-    const pair2 = this.formatCodePair('BL-12', '04');
+    const code1 = this.formatCode('BL-12', '02');
+    const code2 = this.formatCode('BL-12', '04');
 
     return {
       productName: '',
@@ -145,11 +142,11 @@ export class AddProductComponent implements OnInit {
       availableQuantity: 1,
       description: '',
       productImage: '',
-      isFullSet: true,
+      isFullSet: false,
       codePrefix: 'BL-12',
       items: [
-        { productCode: pair1.topCode, topCode: pair1.topCode, bottomCode: pair1.bottomCode, topSize: '02', bottomSize: '02', sizeID: null, colorID: null },
-        { productCode: pair2.topCode, topCode: pair2.topCode, bottomCode: pair2.bottomCode, topSize: '04', bottomSize: '04', sizeID: null, colorID: null }
+        { productCode: code1, sizeID: null, colorID: null },
+        { productCode: code2, sizeID: null, colorID: null }
       ]
     };
   }
@@ -320,14 +317,9 @@ export class AddProductComponent implements OnInit {
     this.batchForm.items = this.selectedSizeIds.map(sizeId => {
       const sObj = this.sizes.find(sz => sz.sizeID === sizeId);
       const sName = sObj ? sObj.sizeName : String(sizeId);
-      const codes = this.formatCodePair(prefix, sName);
 
       return {
-        productCode: codes.topCode,
-        topCode: codes.topCode,
-        bottomCode: codes.bottomCode,
-        topSize: sName,
-        bottomSize: sName,
+        productCode: this.formatCode(prefix, sName),
         sizeID: sizeId,
         colorID: this.batchForm.colorID || this.form.colorID || null
       };
@@ -338,14 +330,9 @@ export class AddProductComponent implements OnInit {
     const count = this.batchForm.items.length + 1;
     const seq = count < 10 ? `0${count}` : `${count}`;
     const prefix = this.batchForm.codePrefix || 'BL-12';
-    const codes = this.formatCodePair(prefix, seq);
 
     this.batchForm.items.push({
-      productCode: codes.topCode,
-      topCode: codes.topCode,
-      bottomCode: codes.bottomCode,
-      topSize: '',
-      bottomSize: '',
+      productCode: this.formatCode(prefix, seq),
       sizeID: null,
       colorID: null
     });
@@ -362,11 +349,7 @@ export class AddProductComponent implements OnInit {
     this.batchForm.items.forEach((item, idx) => {
       const sObj = this.sizes.find(s => s.sizeID === item.sizeID);
       const tag = sObj ? sObj.sizeName : (idx + 1 < 10 ? `0${idx + 1}` : `${idx + 1}`);
-      const codes = this.formatCodePair(prefix, tag);
-
-      item.productCode = codes.topCode;
-      item.topCode = codes.topCode;
-      item.bottomCode = codes.bottomCode;
+      item.productCode = this.formatCode(prefix, tag);
     });
   }
 
@@ -386,17 +369,57 @@ export class AddProductComponent implements OnInit {
   onImageSelected(event: Event) {
     const input = event.target as HTMLInputElement;
     if (!input.files?.length) return;
-    this.productApi.uploadImage(input.files[0]).subscribe(res => {
-      if (res.success) {
-        if (this.addTab === 'batch') {
-          this.batchForm.productImage = res.data;
+    const file = input.files[0];
+    this.uploadingImage = true;
+    this.productApi.uploadImage(file).subscribe({
+      next: res => {
+        this.uploadingImage = false;
+        if (res.success) {
+          if (this.addTab === 'batch' && !this.isEditMode) {
+            this.batchForm.productImage = res.data;
+          } else {
+            this.form.productImage = res.data;
+          }
+          this.showMsg('Image uploaded successfully', 'success');
         } else {
-          this.form.productImage = res.data;
+          this.showMsg(res.message || 'Image upload failed', 'error');
         }
-      } else {
-        this.showMsg(res.message || 'Image upload failed', 'error');
+      },
+      error: (err) => {
+        this.uploadingImage = false;
+        this.showMsg('Image upload failed: ' + (err?.error?.message || err?.message || 'Server error'), 'error');
       }
     });
+    input.value = '';
+  }
+
+  removeImage() {
+    if (this.addTab === 'batch' && !this.isEditMode) {
+      this.batchForm.productImage = '';
+    } else {
+      this.form.productImage = '';
+    }
+    this.showMsg('Product image removed', 'success');
+  }
+
+  openImageLightbox() {
+    if (this.form.productImage || this.batchForm.productImage) {
+      this.showImageLightbox = true;
+    }
+  }
+
+  closeImageLightbox() {
+    this.showImageLightbox = false;
+  }
+
+  getGroupCode(productCode: string): string {
+    if (!productCode) return '';
+    const clean = productCode.trim().toUpperCase();
+    const parts = clean.split('-');
+    if (parts.length >= 3) {
+      return `${parts[0]}-${parts[1]}`;
+    }
+    return clean;
   }
 
   private validate(): string | null {
@@ -436,6 +459,19 @@ export class AddProductComponent implements OnInit {
     };
   }
 
+  formatProductError(rawMsg?: string): string {
+    if (!rawMsg) return 'Product code already exists in database.';
+    if (rawMsg.includes('UNIQUE KEY') || rawMsg.includes('duplicate key')) {
+      const match = rawMsg.match(/\(([^)]+)\)/);
+      const code = match ? match[1] : '';
+      if (code) {
+        return `Product Code '${code}' already exists. Please click Auto-Code to generate new codes.`;
+      }
+      return 'Product Code already exists in database. Please enter or generate a unique code.';
+    }
+    return rawMsg;
+  }
+
   save() {
     if (this.addTab === 'batch' && !this.form.productID) {
       this.saveBatch();
@@ -454,17 +490,98 @@ export class AddProductComponent implements OnInit {
     const req = isUpdate ? this.productApi.update(payload) : this.productApi.create(payload);
     req.subscribe({
       next: res => {
-        this.saving = false;
         if (res.success) {
-          this.showMsg(res.message || 'Saved successfully', 'success');
-          setTimeout(() => this.router.navigate(['/masters/product']), 1000);
+          if (isUpdate && (this.applyImageToGroup || this.applyPriceToGroup)) {
+            this.syncGroupVariants(payload);
+          } else {
+            this.saving = false;
+            this.showMsg(res.message || 'Saved successfully', 'success');
+            setTimeout(() => this.router.navigate(['/masters/product']), 1000);
+          }
         } else {
-          this.showMsg(res.message || 'Save failed', 'error');
+          this.saving = false;
+          this.showMsg(this.formatProductError(res.message), 'error');
+        }
+      },
+      error: (err) => {
+        this.saving = false;
+        const msg = err?.error?.message || err?.message;
+        this.showMsg(this.formatProductError(msg || 'Save request failed'), 'error');
+      }
+    });
+  }
+
+  syncGroupVariants(updatedPayload: any) {
+    const groupCode = this.getGroupCode(updatedPayload.productCode);
+    const cid = updatedPayload.companyID;
+
+    this.productApi.list(cid).subscribe({
+      next: res => {
+        if (res.success && Array.isArray(res.data)) {
+          const siblings = asArray(res.data).filter(p => {
+            const pId = pickId(p, 'productID', 'ProductID');
+            const code = p.productCode || p.ProductCode || '';
+            return pId !== updatedPayload.productID && this.getGroupCode(code) === groupCode;
+          });
+
+          if (!siblings.length) {
+            this.saving = false;
+            this.showMsg('Saved successfully!', 'success');
+            setTimeout(() => this.router.navigate(['/masters/product']), 1000);
+            return;
+          }
+
+          const syncReqs = siblings.map(sib => {
+            const sibPayload = {
+              productID: pickId(sib, 'productID', 'ProductID'),
+              companyID: sib.companyID ?? sib.CompanyID ?? cid,
+              branchID: sib.branchID ?? sib.BranchID ?? updatedPayload.branchID,
+              productCode: sib.productCode ?? sib.ProductCode,
+              productName: sib.productName ?? sib.ProductName,
+              categoryID: sib.categoryID ?? sib.CategoryID,
+              sizeID: sib.sizeID ?? sib.SizeID,
+              colorID: sib.colorID ?? sib.ColorID,
+              ageGroup: sib.ageGroup ?? sib.AgeGroup ?? '',
+              rentAmount: this.applyPriceToGroup ? updatedPayload.rentAmount : Number(sib.rentAmount ?? sib.RentAmount ?? 0),
+              depositAmount: this.applyPriceToGroup ? updatedPayload.depositAmount : Number(sib.depositAmount ?? sib.DepositAmount ?? 0),
+              discountPercent: this.applyPriceToGroup ? updatedPayload.discountPercent : Number(sib.discountPercent ?? sib.DiscountPercent ?? 0),
+              standardRentalDays: updatedPayload.standardRentalDays,
+              extraChargePerDay: updatedPayload.extraChargePerDay,
+              availableQuantity: sib.availableQuantity ?? sib.AvailableQuantity ?? 1,
+              description: sib.description ?? sib.Description ?? '',
+              productImage: this.applyImageToGroup ? updatedPayload.productImage : (sib.productImage ?? sib.ProductImage ?? ''),
+              isAvailable: sib.isAvailable !== false && sib.isAvailable !== 0,
+              isFullSet: !!(sib.isFullSet ?? sib.IsFullSet),
+              topCode: sib.topCode ?? sib.TopCode ?? '',
+              topSize: sib.topSize ?? sib.TopSize ?? '',
+              bottomCode: sib.bottomCode ?? sib.BottomCode ?? '',
+              bottomSize: sib.bottomSize ?? sib.BottomSize ?? ''
+            };
+            return this.productApi.update(sibPayload);
+          });
+
+          forkJoin(syncReqs).subscribe({
+            next: () => {
+              this.saving = false;
+              this.showMsg(`Saved & synced updates to all ${siblings.length + 1} size variants in ${groupCode}!`, 'success');
+              setTimeout(() => this.router.navigate(['/masters/product']), 1200);
+            },
+            error: () => {
+              this.saving = false;
+              this.showMsg('Main product saved, but failed to sync group variants', 'error');
+              setTimeout(() => this.router.navigate(['/masters/product']), 1500);
+            }
+          });
+        } else {
+          this.saving = false;
+          this.showMsg('Saved product successfully', 'success');
+          setTimeout(() => this.router.navigate(['/masters/product']), 1000);
         }
       },
       error: () => {
         this.saving = false;
-        this.showMsg('Save request failed', 'error');
+        this.showMsg('Saved product successfully', 'success');
+        setTimeout(() => this.router.navigate(['/masters/product']), 1000);
       }
     });
   }
@@ -490,9 +607,9 @@ export class AddProductComponent implements OnInit {
     const defaultSizeID = this.sizes[0]?.sizeID ?? 1;
 
     const payloads = this.batchForm.items.map(item => {
-      const pCode = (item.productCode || item.topCode || 'ITEM').trim();
+      const pCode = (item.productCode || 'ITEM').trim();
       const szObj = this.sizes.find(s => s.sizeID === item.sizeID);
-      const szName = szObj ? szObj.sizeName : (item.topSize || '12');
+      const szName = szObj ? szObj.sizeName : '12';
 
       return {
         productID: 0,
@@ -513,11 +630,11 @@ export class AddProductComponent implements OnInit {
         description: this.batchForm.description || this.form.description || '',
         productImage: this.batchForm.productImage || this.form.productImage || '',
         isAvailable: true,
-        isFullSet: !!this.batchForm.isFullSet,
-        topCode: item.topCode || pCode,
-        topSize: item.topSize || szName,
-        bottomCode: item.bottomCode || `${pCode}-P`,
-        bottomSize: item.bottomSize || szName
+        isFullSet: false,
+        topCode: pCode,
+        topSize: szName,
+        bottomCode: '',
+        bottomSize: ''
       };
     });
 
@@ -534,17 +651,17 @@ export class AddProductComponent implements OnInit {
           this.showMsg(`Successfully created all ${successCount} batch products!`, 'success');
           setTimeout(() => this.router.navigate(['/masters/product']), 1000);
         } else if (successCount > 0) {
-          const firstErr = failedResults[0]?.message || 'Some items failed';
+          const firstErr = this.formatProductError(failedResults[0]?.message);
           this.showMsg(`Created ${successCount} products. ${failedResults.length} failed (${firstErr})`, 'error');
         } else {
-          const firstErr = failedResults[0]?.message || 'Product code already exists in database. Please click Auto-Code to generate new codes.';
+          const firstErr = this.formatProductError(failedResults[0]?.message);
           this.showMsg(`Batch creation failed: ${firstErr}`, 'error');
         }
       },
       error: (err) => {
         this.saving = false;
-        const msg = err?.error?.message || err?.message || 'Failed to save batch products';
-        this.showMsg(`Batch creation error: ${msg}`, 'error');
+        const msg = err?.error?.message || err?.message;
+        this.showMsg(`Batch creation error: ${this.formatProductError(msg)}`, 'error');
       }
     });
   }

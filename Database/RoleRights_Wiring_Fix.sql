@@ -71,12 +71,30 @@ BEGIN
 END
 GO
 
+/* Ensure standard roles (1=SuperAdmin, 2=Admin, 3=BranchAdmin, 4=Staff) exist */
+SET IDENTITY_INSERT tblRole ON;
+
+IF NOT EXISTS (SELECT 1 FROM tblRole WHERE RoleID = 1)
+    INSERT INTO tblRole(RoleID, RoleName, Description, IsActive, IsDeleted) VALUES (1, 'SuperAdmin', 'Platform Super Admin', 1, 0);
+
+IF NOT EXISTS (SELECT 1 FROM tblRole WHERE RoleID = 2)
+    INSERT INTO tblRole(RoleID, RoleName, Description, IsActive, IsDeleted) VALUES (2, 'Admin', 'Company Admin', 1, 0);
+
+IF NOT EXISTS (SELECT 1 FROM tblRole WHERE RoleID = 3)
+    INSERT INTO tblRole(RoleID, RoleName, Description, IsActive, IsDeleted) VALUES (3, 'BranchAdmin', 'Branch Admin', 1, 0);
+
+IF NOT EXISTS (SELECT 1 FROM tblRole WHERE RoleID = 4)
+    INSERT INTO tblRole(RoleID, RoleName, Description, IsActive, IsDeleted) VALUES (4, 'Staff', 'Branch Staff', 1, 0);
+
+SET IDENTITY_INSERT tblRole OFF;
+GO
+
 /* Ensure every standard role has all menu rows (missing keys inserted as denied) */
 DECLARE @Menus TABLE (MenuKey VARCHAR(100));
 INSERT INTO @Menus VALUES
 ('dashboard'),('category'),('size'),('color'),('product'),
 ('company'),('branch'),('roleRights'),
-('bookingAdd'),('bookingList'),
+('bookingAdd'),('bookingList'),('availabilityCheck'),
 ('reportDelivery'),('reportReturn'),('reportBooking'),('reportPayment');
 
 INSERT INTO tblRoleRights(RoleID, MenuKey, CanAccess, IsView, IsCreate, IsUpdate, IsDelete)
@@ -87,40 +105,49 @@ WHERE R.IsDeleted = 0
   AND NOT EXISTS (SELECT 1 FROM tblRoleRights RR WHERE RR.RoleID = R.RoleID AND RR.MenuKey = M.MenuKey);
 GO
 
-/* Recommended: BranchAdmin (3) — branch operations, no platform */
-DELETE FROM tblRoleRights WHERE RoleID = 3;
-INSERT INTO tblRoleRights(RoleID, MenuKey, CanAccess, IsView, IsCreate, IsUpdate, IsDelete)
-SELECT 3, m.MenuKey, 1, 1, 1, 1, 1 FROM (VALUES
-    ('dashboard'),
-    ('category'),('size'),('color'),('product'),
-    ('bookingAdd'),('bookingList'),
-    ('reportDelivery'),('reportReturn')
-) AS m(MenuKey);
+/* BranchAdmin (3) — branch operations */
+IF EXISTS (SELECT 1 FROM tblRole WHERE RoleID = 3)
+BEGIN
+    DELETE FROM tblRoleRights WHERE RoleID = 3;
+    INSERT INTO tblRoleRights(RoleID, MenuKey, CanAccess, IsView, IsCreate, IsUpdate, IsDelete)
+    SELECT 3, m.MenuKey, 1, 1, 1, 1, 1 FROM (VALUES
+        ('dashboard'),
+        ('category'),('size'),('color'),('product'),
+        ('bookingAdd'),('bookingList'),('availabilityCheck'),
+        ('reportDelivery'),('reportReturn')
+    ) AS m(MenuKey);
+END
 GO
 
-/* Company Admin (2) — company scope, no platform-only */
-DELETE FROM tblRoleRights WHERE RoleID = 2;
-INSERT INTO tblRoleRights(RoleID, MenuKey, CanAccess, IsView, IsCreate, IsUpdate, IsDelete)
-SELECT 2, m.MenuKey, 1, 1, 1, 1, 1 FROM (VALUES
-    ('dashboard'),
-    ('category'),('size'),('color'),('product'),
-    ('branch'),
-    ('bookingAdd'),('bookingList'),
-    ('reportDelivery'),('reportReturn'),('reportBooking'),('reportPayment')
-) AS m(MenuKey);
+/* Company Admin (2) — company scope */
+IF EXISTS (SELECT 1 FROM tblRole WHERE RoleID = 2)
+BEGIN
+    DELETE FROM tblRoleRights WHERE RoleID = 2;
+    INSERT INTO tblRoleRights(RoleID, MenuKey, CanAccess, IsView, IsCreate, IsUpdate, IsDelete)
+    SELECT 2, m.MenuKey, 1, 1, 1, 1, 1 FROM (VALUES
+        ('dashboard'),
+        ('category'),('size'),('color'),('product'),
+        ('branch'),
+        ('bookingAdd'),('bookingList'),('availabilityCheck'),
+        ('reportDelivery'),('reportReturn'),('reportBooking'),('reportPayment')
+    ) AS m(MenuKey);
+END
 GO
 
 /* SuperAdmin (1) — all menus */
-DELETE FROM tblRoleRights WHERE RoleID = 1;
-INSERT INTO tblRoleRights(RoleID, MenuKey, CanAccess, IsView, IsCreate, IsUpdate, IsDelete)
-SELECT 1, m.MenuKey, 1, 1, 1, 1, 1 FROM (VALUES
-    ('dashboard'),
-    ('category'),('size'),('color'),('product'),
-    ('company'),('branch'),('roleRights'),
-    ('bookingAdd'),('bookingList'),
-    ('reportDelivery'),('reportReturn'),('reportBooking'),('reportPayment')
-) AS m(MenuKey);
+IF EXISTS (SELECT 1 FROM tblRole WHERE RoleID = 1)
+BEGIN
+    DELETE FROM tblRoleRights WHERE RoleID = 1;
+    INSERT INTO tblRoleRights(RoleID, MenuKey, CanAccess, IsView, IsCreate, IsUpdate, IsDelete)
+    SELECT 1, m.MenuKey, 1, 1, 1, 1, 1 FROM (VALUES
+        ('dashboard'),
+        ('category'),('size'),('color'),('product'),
+        ('company'),('branch'),('roleRights'),
+        ('bookingAdd'),('bookingList'),('availabilityCheck'),
+        ('reportDelivery'),('reportReturn'),('reportBooking'),('reportPayment')
+    ) AS m(MenuKey);
+END
 GO
 
-PRINT 'RoleRights_Wiring_Fix.sql done. Re-login after running.';
+PRINT 'RoleRights_Wiring_Fix.sql completed successfully!';
 GO

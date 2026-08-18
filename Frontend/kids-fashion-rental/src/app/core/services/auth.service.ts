@@ -124,12 +124,13 @@ export class AuthService {
         'product',
         'bookingAdd',
         'bookingList',
+        'availabilityCheck',
         'reportDelivery',
         'reportReturn'
       ].includes(menuKey);
     }
     if (this.isBranchStaff()) {
-      return ['dashboard', 'bookingAdd', 'bookingList', 'reportDelivery', 'reportReturn'].includes(menuKey);
+      return ['dashboard', 'bookingAdd', 'bookingList', 'availabilityCheck', 'reportDelivery', 'reportReturn'].includes(menuKey);
     }
     return menuKey === 'dashboard';
   }

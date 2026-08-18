@@ -8,6 +8,8 @@
       <i class="bi bi-plus-lg"></i> Add Product
     </a>
   }
+</div>
+
 @if (loading && !products.length) {
   <div class="glass-card loading-box">Loading products...</div>
 }
@@ -65,7 +67,11 @@
       </thead>
       <tbody>
         @if (!groupedProducts.length && !loading) {
-          <tr><td colspan="11" class="empty-row">No products found</td></tr>
+          <tr>
+            <td colspan="12" class="empty-row text-center py-4 text-muted">
+              <i class="bi bi-bag-x fs-3 d-block mb-1"></i> No products found in system. Click 'Add Product' to create your first product design.
+            </td>
+          </tr>
         }
         @for (g of groupedProducts; track g.groupCode || $index) {
           <!-- MASTER GROUP ROW (Click to Open All Sizes) -->
@@ -75,7 +81,7 @@
             </td>
             <td class="img-cell">
               @if (g.productImage) {
-                <img [src]="imageUrl(g.productImage)" [alt]="g.productName" />
+                <img [src]="imageUrl(g.productImage)" [alt]="g.productName" (click)="openImageLightbox(g.productImage, g.groupCode + ' - ' + g.productName, $event)" title="Click to view full image" class="clickable-thumb" />
               } @else {
                 <span class="img-ph"><i class="bi bi-image"></i></span>
               }
@@ -140,9 +146,7 @@
                     <thead>
                       <tr>
                         <th style="width: 40px;">#</th>
-                        <th>Variant Code</th>
-                        <th>Top Code</th>
-                        <th>Bottom Code</th>
+                        <th>Product Code</th>
                         <th>Size</th>
                         <th>Color</th>
                         <th>Rent</th>
@@ -157,8 +161,6 @@
                         <tr>
                           <td class="text-center font-weight-bold">{{ $index + 1 }}</td>
                           <td><strong class="code-badge">{{ item.productCode }}</strong></td>
-                          <td><small class="text-top">{{ item.topCode || item.productCode }}</small></td>
-                          <td><small class="text-btm">{{ item.bottomCode || (item.productCode + '-P') }}</small></td>
                           <td><span class="size-badge">{{ getSizeName(item) }}</span></td>
                           <td>{{ getColorName(item) }}</td>
                           <td>{{ item.rentAmount | currency:'INR':'symbol':'1.0-2' }}</td>
@@ -222,13 +224,17 @@
       </thead>
       <tbody>
         @if (!filtered.length && !loading) {
-          <tr><td colspan="11" class="empty-row">No products found</td></tr>
+          <tr>
+            <td colspan="12" class="empty-row text-center py-4 text-muted">
+              <i class="bi bi-bag-x fs-3 d-block mb-1"></i> No products found in system. Click 'Add Product' to create your first product design.
+            </td>
+          </tr>
         }
         @for (p of filtered; track p.productID || $index) {
           <tr class="row-hover">
             <td class="img-cell">
               @if (p.productImage) {
-                <img [src]="imageUrl(p.productImage)" [alt]="p.productName" />
+                <img [src]="imageUrl(p.productImage)" [alt]="p.productName" (click)="openImageLightbox(p.productImage, p.productCode + ' - ' + p.productName, $event)" title="Click to view full image" class="clickable-thumb" />
               } @else {
                 <span class="img-ph"><i class="bi bi-image"></i></span>
               }
@@ -300,5 +306,20 @@
         }
       </tbody>
     </table>
+  </div>
+}
+
+<!-- IMAGE LIGHTBOX PREVIEW MODAL -->
+@if (showImageLightbox) {
+  <div class="lightbox-overlay" (click)="closeImageLightbox()">
+    <div class="lightbox-dialog" (click)="$event.stopPropagation()">
+      <button type="button" class="lightbox-close-btn" (click)="closeImageLightbox()"><i class="bi bi-x-lg"></i></button>
+      <div class="lightbox-img-wrap">
+        <img [src]="imageUrl(lightboxImage)" alt="Product Preview" />
+      </div>
+      <div class="lightbox-meta">
+        <strong>{{ lightboxTitle }}</strong>
+      </div>
+    </div>
   </div>
 }

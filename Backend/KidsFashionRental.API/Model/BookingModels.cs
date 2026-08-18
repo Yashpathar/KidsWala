@@ -16,6 +16,8 @@ public class BookingListModel
     public decimal RemainingAmount { get; set; }
     public string BookingStatus { get; set; } = string.Empty;
     public string PaymentStatus { get; set; } = string.Empty;
+    public string? DeliverySession { get; set; }
+    public string? ReturnSession { get; set; }
     public int ExtraDays { get; set; }
     public decimal ExtraChargeAmount { get; set; }
     public decimal DamageDeductionAmount { get; set; }
@@ -40,6 +42,8 @@ public class TodayReturnReportModel
     public decimal FinalProfitAmount { get; set; }
     public string BookingStatus { get; set; } = string.Empty;
     public DateTime? ActualReturnDate { get; set; }
+    public string? DeliverySession { get; set; }
+    public string? ReturnSession { get; set; }
 }
 
 public class BookingDetailItemModel
@@ -83,6 +87,8 @@ public class BookingCreateModel
     public decimal ExtraChargeAmount { get; set; }
     public string BookingStatus { get; set; } = "Booked";
     public string PaymentStatus { get; set; } = "Partial";
+    public string? DeliverySession { get; set; }
+    public string? ReturnSession { get; set; }
     public string? Notes { get; set; }
     public List<BookingDetailItemModel> Items { get; set; } = [];
 }
@@ -100,6 +106,8 @@ public class BookingUpdateModel
     public decimal TotalAmount { get; set; }
     public string BookingStatus { get; set; } = string.Empty;
     public string PaymentStatus { get; set; } = string.Empty;
+    public string? DeliverySession { get; set; }
+    public string? ReturnSession { get; set; }
     public string? Notes { get; set; }
 }
 
@@ -222,6 +230,8 @@ public class TodayDeliveryDashModel
     public decimal PendingAmount { get; set; }
     public string PaymentStatus { get; set; } = string.Empty;
     public string DeliveryStatus { get; set; } = string.Empty;
+    public string? DeliverySession { get; set; }
+    public string? ReturnSession { get; set; }
 }
 
 public class TodayReturnDashModel
@@ -234,6 +244,8 @@ public class TodayReturnDashModel
     public DateTime ReturnDate { get; set; }
     public decimal DepositAmount { get; set; }
     public string BookingStatus { get; set; } = string.Empty;
+    public string? DeliverySession { get; set; }
+    public string? ReturnSession { get; set; }
 }
 
 public class DashboardSummaryModel

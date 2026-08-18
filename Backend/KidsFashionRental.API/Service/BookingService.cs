@@ -28,5 +28,7 @@ public class BookingService : IBookingService
     public Task<ApiResult> DeleteAsync(BookingByIdModel model) => _repo.DeleteAsync(model);
     public Task<ApiResult> ProcessReturnAsync(ReturnProcessModel model) => _repo.ProcessReturnAsync(model);
     public Task<ApiResult> CheckAvailabilityAsync(AvailabilityRequestModel model) => _repo.CheckAvailabilityAsync(model);
+    public Task<ApiResult> GetProductStatusByCodeAsync(string code, DateTime? deliveryDate = null, DateTime? returnDate = null)
+        => _repo.GetProductStatusByCodeAsync(code, deliveryDate, returnDate);
     public Task<ApiResult> AddPaymentAsync(PaymentCreateModel model) => _repo.AddPaymentAsync(model);
 }

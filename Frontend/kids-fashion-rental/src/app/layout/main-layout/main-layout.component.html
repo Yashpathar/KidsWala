@@ -4,14 +4,14 @@
   <aside class="sidebar">
     <div class="brand">
       <div class="brand-icon-wrap">
-        @if (auth.currentUser()?.companyLogo) {
-          <img [src]="imageUrl(auth.currentUser()?.companyLogo)" alt="Company Logo" class="brand-company-logo" />
+        @if (auth.currentUser()?.companyLogo && auth.currentUser()?.companyName !== 'All Companies') {
+        <img [src]="imageUrl(auth.currentUser()?.companyLogo)" alt="Company Logo" class="brand-company-logo" />
         } @else {
-          <span class="brand-icon">👑</span>
+        <img src="/images/Logo.png" alt="RentRiwaaz Logo" class="brand-company-logo" />
         }
       </div>
       <div class="brand-text">
-        <strong>{{ auth.currentUser()?.companyName || 'KIDS FASHION' }}</strong>
+        <strong>{{ (!auth.currentUser()?.companyName || auth.currentUser()?.companyName === 'All Companies') ? 'RentRiwaaz' : auth.currentUser()?.companyName }}</strong>
         <span class="brand-tag">RENTAL WEAR</span>
       </div>
       <button type="button" class="mobile-close-btn" (click)="closeMobileSidebar()" aria-label="Close menu">
@@ -21,111 +21,129 @@
 
     <nav class="sidebar-nav">
       @if (auth.canViewMenu('dashboard')) {
-        <p class="nav-label">MAIN</p>
-        <a routerLink="/dashboard" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
-          <i class="bi bi-grid-1x2-fill"></i>
-          <span>Dashboard</span>
-        </a>
+      <p class="nav-label">MAIN</p>
+      <a routerLink="/dashboard" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <i class="bi bi-grid-1x2-fill"></i>
+        <span>Dashboard</span>
+      </a>
       }
 
       @if (auth.canViewAnyMenu(['category', 'size', 'color', 'product'])) {
-        <p class="nav-label">MASTERS</p>
-        @if (auth.canViewMenu('category')) {
-          <a routerLink="/masters/category" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
-            <i class="bi bi-folder2-open"></i>
-            <span>Category Master</span>
-          </a>
-        }
-        @if (auth.canViewMenu('size')) {
-          <a routerLink="/masters/size" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
-            <i class="bi bi-rulers"></i>
-            <span>Size Master</span>
-          </a>
-        }
-        @if (auth.canViewMenu('color')) {
-          <a routerLink="/masters/color" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
-            <i class="bi bi-palette"></i>
-            <span>Color Master</span>
-          </a>
-        }
-        @if (auth.canViewMenu('product')) {
-          <a routerLink="/masters/product" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
-            <i class="bi bi-bag-check"></i>
-            <span>Product Master</span>
-          </a>
-        }
+      <p class="nav-label">MASTERS</p>
+      @if (auth.canViewMenu('category')) {
+      <a routerLink="/masters/category" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <i class="bi bi-folder2-open"></i>
+        <span>Category Master</span>
+      </a>
+      }
+      @if (auth.canViewMenu('size')) {
+      <a routerLink="/masters/size" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <i class="bi bi-rulers"></i>
+        <span>Size Master</span>
+      </a>
+      }
+      @if (auth.canViewMenu('color')) {
+      <a routerLink="/masters/color" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <i class="bi bi-palette"></i>
+        <span>Color Master</span>
+      </a>
+      }
+      @if (auth.canViewMenu('product')) {
+      <a routerLink="/masters/product" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <i class="bi bi-bag-check"></i>
+        <span>Product Master</span>
+      </a>
+      <a routerLink="/masters/bulk-product" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <i class="bi bi-file-earmark-excel"></i>
+        <span>Bulk Product Add</span>
+      </a>
+      }
       }
 
-      @if (auth.canViewAnyMenu(['company', 'branch', 'roleRights', 'user'])) {
-        <p class="nav-label">PLATFORM</p>
-        @if (auth.canViewMenu('company')) {
-          <a routerLink="/masters/company" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
-            <i class="bi bi-building"></i>
-            <span>Company Master</span>
-          </a>
-        }
-        @if (auth.canViewMenu('branch')) {
-          <a routerLink="/masters/branch" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
-            <i class="bi bi-shop"></i>
-            <span>Branch Master</span>
-          </a>
-        }
-        @if (auth.canViewMenu('user')) {
-          <a routerLink="/masters/user" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
-            <i class="bi bi-people"></i>
-            <span>User Master</span>
-          </a>
-        }
-        @if (auth.canViewMenu('roleRights')) {
-          <a routerLink="/masters/role-rights" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
-            <i class="bi bi-shield-lock"></i>
-            <span>Role Rights</span>
-          </a>
-        }
+      @if (auth.canViewAnyMenu(['company', 'branch', 'role', 'roleRights', 'user'])) {
+      <p class="nav-label">PLATFORM</p>
+      @if (auth.canViewMenu('company')) {
+      <a routerLink="/masters/company" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <i class="bi bi-building"></i>
+        <span>Company Master</span>
+      </a>
+      }
+      @if (auth.canViewMenu('branch')) {
+      <a routerLink="/masters/branch" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <i class="bi bi-shop"></i>
+        <span>Branch Master</span>
+      </a>
+      }
+      @if (auth.canViewMenu('user')) {
+      <a routerLink="/masters/user" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <i class="bi bi-people"></i>
+        <span>User Master</span>
+      </a>
+      }
+      @if (auth.canViewMenu('role')) {
+      <a routerLink="/masters/role" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <i class="bi bi-shield-check"></i>
+        <span>Role Master</span>
+      </a>
+      }
+      @if (auth.canViewMenu('roleRights')) {
+      <a routerLink="/masters/role-rights" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <i class="bi bi-shield-lock"></i>
+        <span>Role Rights</span>
+      </a>
+      }
       }
 
-      @if (auth.canViewAnyMenu(['bookingAdd', 'bookingList'])) {
-        <p class="nav-label">BOOKING</p>
-        @if (auth.canViewMenu('bookingAdd')) {
-          <a routerLink="/booking/add" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
-            <i class="bi bi-plus-circle-fill"></i>
-            <span>Add Booking</span>
-          </a>
-        }
-        @if (auth.canViewMenu('bookingList')) {
-          <a routerLink="/booking/list" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
-            <i class="bi bi-journal-text"></i>
-            <span>Booking List</span>
-          </a>
-        }
+      @if (auth.canViewAnyMenu(['bookingAdd', 'bookingList', 'availabilityCheck'])) {
+      <p class="nav-label">BOOKING</p>
+      @if (auth.canViewMenu('bookingAdd')) {
+      <a routerLink="/booking/add" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <i class="bi bi-plus-circle-fill"></i>
+        <span>Add Booking</span>
+      </a>
+      }
+      @if (auth.canViewMenu('bookingList')) {
+      <a routerLink="/booking/list" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <i class="bi bi-journal-text"></i>
+        <span>Booking List</span>
+      </a>
+      }
+      @if (auth.canViewMenu('availabilityCheck')) {
+      <a routerLink="/booking/availability-check" routerLinkActive="active" class="nav-item"
+        (click)="closeMobileSidebar()">
+        <i class="bi bi-calendar-check-fill"></i>
+        <span>Availability Check</span>
+      </a>
+      }
       }
 
       @if (auth.canViewAnyMenu(['reportDelivery', 'reportReturn', 'reportBooking', 'reportPayment'])) {
-        <p class="nav-label">REPORTS</p>
-        @if (auth.canViewMenu('reportBooking')) {
-          <a routerLink="/reports" routerLinkActive="active" class="nav-item" [routerLinkActiveOptions]="{ exact: true }" (click)="closeMobileSidebar()">
-            <i class="bi bi-bar-chart-line-fill"></i>
-            <span>All Reports</span>
-          </a>
-        }
-        @if (auth.canViewMenu('reportDelivery')) {
-          <a routerLink="/reports/delivery" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
-            <i class="bi bi-truck"></i>
-            <span>Today Delivery</span>
-          </a>
-        }
-        @if (auth.canViewMenu('reportReturn')) {
-          <a routerLink="/reports/return" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
-            <i class="bi bi-arrow-return-left"></i>
-            <span>Today Return</span>
-          </a>
-        }
-        @if (auth.canViewMenu('reportPayment')) {
-          <a routerLink="/reports/payments" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
-            <i class="bi bi-credit-card-2-front"></i>
-            <span>Payment Report</span>
-          </a>
-        }
+      <p class="nav-label">REPORTS</p>
+      @if (auth.canViewMenu('reportBooking')) {
+      <a routerLink="/reports" routerLinkActive="active" class="nav-item" [routerLinkActiveOptions]="{ exact: true }"
+        (click)="closeMobileSidebar()">
+        <i class="bi bi-bar-chart-line-fill"></i>
+        <span>All Reports</span>
+      </a>
+      }
+      @if (auth.canViewMenu('reportDelivery')) {
+      <a routerLink="/reports/delivery" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <i class="bi bi-truck"></i>
+        <span>Today Delivery</span>
+      </a>
+      }
+      @if (auth.canViewMenu('reportReturn')) {
+      <a routerLink="/reports/return" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <i class="bi bi-arrow-return-left"></i>
+        <span>Today Return</span>
+      </a>
+      }
+      @if (auth.canViewMenu('reportPayment')) {
+      <a routerLink="/reports/payments" routerLinkActive="active" class="nav-item" (click)="closeMobileSidebar()">
+        <i class="bi bi-credit-card-2-front"></i>
+        <span>Payment Report</span>
+      </a>
+      }
       }
     </nav>
 
@@ -152,34 +170,34 @@
           <button type="button" class="icon-btn" aria-label="Notifications" (click)="notifOpen = !notifOpen">
             <i class="bi bi-bell"></i>
             @if (unreadCount()) {
-              <span class="notif-badge"></span>
+            <span class="notif-badge"></span>
             }
           </button>
 
           @if (notifOpen) {
-            <div class="notif-panel ui-card slide-up">
-              <div class="notif-header">
-                <strong>Notifications</strong>
-                @if (unreadCount()) {
-                  <span class="unread-pill">{{ unreadCount() }} new</span>
-                }
-              </div>
-              @if (!notifications.length) {
-                <div class="notif-empty">
-                  <i class="bi bi-bell-slash"></i>
-                  <p>No notifications yet</p>
-                </div>
-              }
-              @for (n of notifications; track n.notificationID) {
-                <div class="notif-item" [class.unread]="!n.isRead" (click)="markRead(n)">
-                  <div class="notif-icon"><i class="bi bi-info-circle-fill"></i></div>
-                  <div class="notif-body">
-                    <strong>{{ n.title }}</strong>
-                    <p>{{ n.message }}</p>
-                  </div>
-                </div>
+          <div class="notif-panel ui-card slide-up">
+            <div class="notif-header">
+              <strong>Notifications</strong>
+              @if (unreadCount()) {
+              <span class="unread-pill">{{ unreadCount() }} new</span>
               }
             </div>
+            @if (!notifications.length) {
+            <div class="notif-empty">
+              <i class="bi bi-bell-slash"></i>
+              <p>No notifications yet</p>
+            </div>
+            }
+            @for (n of notifications; track n.notificationID) {
+            <div class="notif-item" [class.unread]="!n.isRead" (click)="markRead(n)">
+              <div class="notif-icon"><i class="bi bi-info-circle-fill"></i></div>
+              <div class="notif-body">
+                <strong>{{ n.title }}</strong>
+                <p>{{ n.message }}</p>
+              </div>
+            </div>
+            }
+          </div>
           }
         </div>
 
@@ -196,7 +214,7 @@
             <span class="company-line">
               <i class="bi bi-building"></i> {{ auth.currentUser()?.companyName }}
               @if (auth.currentUser()?.branchName) {
-                <span>· {{ auth.currentUser()?.branchName }}</span>
+              <span>· {{ auth.currentUser()?.branchName }}</span>
               }
             </span>
           </div>
@@ -210,7 +228,7 @@
 
     <footer class="footer">
       <div class="footer-left">
-        <span class="footer-brand">👑 Kids Fashion Rental Wear</span>
+        <span class="footer-brand">👑 RentRiwaaz Fashion Rental</span>
         <span>© 2026 All rights reserved.</span>
       </div>
       <span class="footer-dev"><i class="bi bi-shield-check"></i> Premium Rental Management Solution</span>

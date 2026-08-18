@@ -79,4 +79,18 @@ public class MasterController : ControllerBase
         if (!IsSuperAdmin(User)) return Ok(ApiResult.Fail("Super Admin only"));
         return Ok(await _service.InsertRoleAsync(model));
     }
+
+    [HttpPut("roles")]
+    public async Task<IActionResult> UpdateRole([FromBody] RoleUpdateModel model)
+    {
+        if (!IsSuperAdmin(User)) return Ok(ApiResult.Fail("Super Admin only"));
+        return Ok(await _service.UpdateRoleAsync(model));
+    }
+
+    [HttpDelete("roles/{id}")]
+    public async Task<IActionResult> DeleteRole(int id)
+    {
+        if (!IsSuperAdmin(User)) return Ok(ApiResult.Fail("Super Admin only"));
+        return Ok(await _service.DeleteRoleAsync(id));
+    }
 }

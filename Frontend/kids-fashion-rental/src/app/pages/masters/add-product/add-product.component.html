@@ -29,7 +29,7 @@
           <i class="bi bi-bag"></i> Single Product Entry
         </button>
         <button type="button" [class.active]="addTab === 'batch'" (click)="addTab = 'batch'">
-          <i class="bi bi-collection-fill"></i> Multi-Size Batch Mode (e.g. BL-01-12 & BL-01P-12)
+          <i class="bi bi-collection-fill"></i> Multi-Size Batch Mode (e.g. BL-15-1, BL-15-2)
         </button>
       </div>
     }
@@ -38,32 +38,46 @@
       <!-- LEFT COLUMN: Product Image & Pricing/Basic Info -->
       <div class="left-panel">
         <div class="panel-section image-panel">
-          <div class="image-upload-box">
-            @if (addTab === 'batch' && !isEditMode) {
-              @if (batchForm.productImage) {
-                <img [src]="imageUrl(batchForm.productImage)" class="preview" alt="" />
+          <div class="image-upload-box" [class.is-uploading]="uploadingImage">
+            @let currentImg = (addTab === 'batch' && !isEditMode) ? batchForm.productImage : form.productImage;
+            
+            <div class="preview-wrapper">
+              @if (currentImg) {
+                <img [src]="imageUrl(currentImg)" class="preview" alt="Product Image" (click)="openImageLightbox()" title="Click to expand" />
               } @else {
-                <div class="preview placeholder"><i class="bi bi-camera"></i><span>Product Image</span></div>
+                <div class="preview placeholder">
+                  <i class="bi bi-camera"></i>
+                  <span>No Product Image</span>
+                </div>
               }
+
+              @if (uploadingImage) {
+                <div class="upload-spinner-overlay">
+                  <i class="bi bi-arrow-repeat spin fs-2"></i>
+                  <span>Uploading Image...</span>
+                </div>
+              }
+            </div>
+
+            <div class="image-actions-bar">
               @if (!viewOnly) {
                 <label class="upload-btn">
-                  <i class="bi bi-upload"></i> Upload Product Image
-                  <input type="file" accept="image/*" hidden (change)="onImageSelected($event)" />
+                  <i class="bi bi-upload"></i> {{ currentImg ? 'Change Image' : 'Upload Image' }}
+                  <input type="file" accept="image/*" hidden (change)="onImageSelected($event)" [disabled]="uploadingImage" />
                 </label>
               }
-            } @else {
-              @if (form.productImage) {
-                <img [src]="imageUrl(form.productImage)" class="preview" alt="" />
-              } @else {
-                <div class="preview placeholder"><i class="bi bi-camera"></i><span>Product Image</span></div>
+
+              @if (currentImg) {
+                <button type="button" class="btn-subtle-sm" (click)="openImageLightbox()" title="View Full Image">
+                  <i class="bi bi-zoom-in"></i> View
+                </button>
+                @if (!viewOnly) {
+                  <button type="button" class="btn-danger-sm" (click)="removeImage()" title="Remove Image">
+                    <i class="bi bi-trash"></i> Remove
+                  </button>
+                }
               }
-              @if (!viewOnly) {
-                <label class="upload-btn">
-                  <i class="bi bi-upload"></i> Upload Product Image
-                  <input type="file" accept="image/*" hidden (change)="onImageSelected($event)" />
-                </label>
-              }
-            }
+            </div>
           </div>
         </div>
 
@@ -128,7 +142,7 @@
         </div>
       </div>
 
-      <!-- RIGHT COLUMN: Codes, Pair Set & Multi-Size Selector -->
+      <!-- RIGHT COLUMN: Codes & Multi-Size Selector -->
       <div class="right-panel">
         
         <!-- COMMON INFORMATION -->
@@ -226,6 +240,65 @@
           </div>
         </div>
 
+        <!-- PRODUCT GROUP SYNC OPTIONS (EDIT MODE ONLY) -->
+        @if (isEditMode && !viewOnly) {
+          <div class="panel-section group-sync-panel">
+            <h4><i class="bi bi-collection"></i> Group Update Sync Options</h4>
+            <p class="section-subtext">Automatically apply changes to all size variants under group <code>{{ getGroupCode(form.productCode) }}</code></p>
+            <div class="group-sync-checkboxes">
+              <label class="sync-checkbox">
+                <input type="checkbox" [(ngModel)]="applyImageToGroup" />
+                <span><i class="bi bi-image"></i> Apply updated image to all size variants of <strong>{{ getGroupCode(form.productCode) }}</strong></span>
+              </label>
+              <label class="sync-checkbox">
+                <input type="checkbox" [(ngModel)]="applyPriceToGroup" />
+                <span><i class="bi bi-currency-rupee"></i> Apply updated Rent & Deposit to all size variants of <strong>{{ getGroupCode(form.productCode) }}</strong></span>
+              </label>
+            </div>
+          </div>
+        }
+
+        <!-- FULL SET / PAIR SUIT DETAILS -->
+        <div class="panel-section pair-section">
+          <div class="flex-between mb-2">
+            <h4><i class="bi bi-layers-fill"></i> Full Set / Pair Suit Details</h4>
+            <label class="toggle-checkbox">
+              <input type="checkbox" [(ngModel)]="form.isFullSet" (change)="onFullSetToggle()" [disabled]="viewOnly" />
+              <span>Is Full Pair Set (Top + Pant)</span>
+            </label>
+          </div>
+          @if (form.isFullSet) {
+            <div class="pair-card-grid">
+              <div class="pair-card top-card">
+                <h5><i class="bi bi-suit-club-fill"></i> Top / Blazer Specs</h5>
+                <div class="form-grid-2">
+                  <div>
+                    <label>Top Code</label>
+                    <input [(ngModel)]="form.topCode" [disabled]="viewOnly" placeholder="e.g. BL-12-TOP" />
+                  </div>
+                  <div>
+                    <label>Top Size</label>
+                    <input [(ngModel)]="form.topSize" [disabled]="viewOnly" placeholder="e.g. 02" />
+                  </div>
+                </div>
+              </div>
+              <div class="pair-card bottom-card">
+                <h5><i class="bi bi-scissors"></i> Bottom / Pant Specs</h5>
+                <div class="form-grid-2">
+                  <div>
+                    <label>Bottom Code</label>
+                    <input [(ngModel)]="form.bottomCode" [disabled]="viewOnly" placeholder="e.g. BL-12-PNT" />
+                  </div>
+                  <div>
+                    <label>Bottom Size</label>
+                    <input [(ngModel)]="form.bottomSize" [disabled]="viewOnly" placeholder="e.g. 02" />
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+
         <!-- MULTI-SIZE CHIPS SELECTOR (QUICK MULTI SIZE ADD) -->
         @if (!isEditMode && !viewOnly) {
           <div class="panel-section multi-size-box">
@@ -235,7 +308,7 @@
                 <i class="bi bi-check2-all"></i> {{ selectedSizeIds.length === sizes.length ? 'Deselect All' : 'Select All Sizes' }}
               </button>
             </div>
-            <p class="section-subtext">Click sizes to auto-generate Top Code <code>BL-12-02</code> & Bottom Code <code>BL-12P-02</code> for each size.</p>
+            <p class="section-subtext">Click sizes to auto-generate Product Code <code>BL-12-02</code> for each size.</p>
             
             <div class="size-chips-wrapper">
               @for (s of sizes; track s.sizeID) {
@@ -248,52 +321,11 @@
           </div>
         }
 
-        <!-- FULL PAIR SET SECTION (SINGLE MODE / EDIT MODE) -->
-        @if (addTab === 'single' || isEditMode) {
-          <div class="panel-section pair-section">
-            <div class="flex-between">
-              <h4><i class="bi bi-layers"></i> Full Pair / Set Setup (Blazer & Pant)</h4>
-              <label class="toggle-checkbox">
-                <input type="checkbox" [(ngModel)]="form.isFullSet" (change)="onFullSetToggle()" [disabled]="viewOnly" />
-                <span>Is Full Pair Set?</span>
-              </label>
-            </div>
-
-            @if (form.isFullSet) {
-              <div class="form-grid-2 mt-2">
-                <div class="pair-card top-card">
-                  <h5><i class="bi bi-person-standing"></i> Top Piece (Blazer / Kurta)</h5>
-                  <div class="mb-2">
-                    <label>Blazer / Top Code</label>
-                    <input [(ngModel)]="form.topCode" [disabled]="viewOnly" placeholder="e.g. BL-12-02" />
-                  </div>
-                  <div>
-                    <label>Blazer / Top Size</label>
-                    <input [(ngModel)]="form.topSize" [disabled]="viewOnly" placeholder="e.g. 02" />
-                  </div>
-                </div>
-
-                <div class="pair-card bottom-card">
-                  <h5><i class="bi bi-segmented-nav"></i> Bottom Piece (Pant / Pajama)</h5>
-                  <div class="mb-2">
-                    <label>Pant / Bottom Code</label>
-                    <input [(ngModel)]="form.bottomCode" [disabled]="viewOnly" placeholder="e.g. BL-12P-02" />
-                  </div>
-                  <div>
-                    <label>Pant / Bottom Size</label>
-                    <input [(ngModel)]="form.bottomSize" [disabled]="viewOnly" placeholder="e.g. 02 or 04" />
-                  </div>
-                </div>
-              </div>
-            }
-          </div>
-        }
-
         <!-- MULTI-SIZE / BATCH ITEMS TABLE -->
         @if (addTab === 'batch' && !isEditMode && !viewOnly) {
           <div class="panel-section">
             <div class="flex-between mb-2">
-              <h4><i class="bi bi-list-check"></i> Generated Items / Variants List (Pairs & Sizes)</h4>
+              <h4><i class="bi bi-list-check"></i> Generated Items / Variants List</h4>
               <button type="button" class="btn-sm-action primary" (click)="addBatchRow()">
                 <i class="bi bi-plus-lg"></i> Add Custom Row
               </button>
@@ -304,8 +336,7 @@
                 <thead>
                   <tr>
                     <th style="width: 40px;">#</th>
-                    <th>Top / Main Code *</th>
-                    <th>Bottom / Pant Code</th>
+                    <th>Product Code *</th>
                     <th>Size *</th>
                     <th>Color Override</th>
                     <th style="width: 50px;" class="text-center">Action</th>
@@ -316,10 +347,7 @@
                     <tr>
                       <td class="text-center font-weight-bold">{{ $index + 1 }}</td>
                       <td>
-                        <input [(ngModel)]="item.topCode" (ngModelChange)="item.productCode = item.topCode" placeholder="e.g. BL-01-12" class="form-input-sm" />
-                      </td>
-                      <td>
-                        <input [(ngModel)]="item.bottomCode" placeholder="e.g. BL-01P-12" class="form-input-sm" />
+                        <input [(ngModel)]="item.productCode" placeholder="e.g. BL-01-12" class="form-input-sm" />
                       </td>
                       <td>
                         <select [(ngModel)]="item.sizeID" class="form-input-sm">
@@ -384,5 +412,21 @@
       }
     </div>
 
+  </div>
+}
+
+<!-- IMAGE LIGHTBOX PREVIEW MODAL -->
+@if (showImageLightbox) {
+  <div class="lightbox-overlay" (click)="closeImageLightbox()">
+    <div class="lightbox-dialog" (click)="$event.stopPropagation()">
+      <button type="button" class="lightbox-close-btn" (click)="closeImageLightbox()"><i class="bi bi-x-lg"></i></button>
+      <div class="lightbox-img-wrap">
+        <img [src]="imageUrl(form.productImage || batchForm.productImage)" alt="Product Preview" />
+      </div>
+      <div class="lightbox-meta">
+        <strong>{{ form.productCode || batchForm.codePrefix }}</strong>
+        <span>{{ form.productName || batchForm.productName }}</span>
+      </div>
+    </div>
   </div>
 }

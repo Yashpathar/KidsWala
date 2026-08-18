@@ -5,15 +5,31 @@
   }
 </div>
 @if (message) { <div class="alert-success">{{ message }}</div> }
-<div class="ui-card table-wrap">
+<div class="ui-card table-card table-wrap">
   <table class="data-table">
-    <thead><tr><th>Company</th><th>Branch</th><th>Code</th><th>Mobile</th><th>Email</th><th></th></tr></thead>
+    <thead>
+      <tr>
+        <th>Company</th>
+        <th>Branch Name</th>
+        <th>Code</th>
+        <th>Mobile</th>
+        <th>Email</th>
+        <th class="text-end">Actions</th>
+      </tr>
+    </thead>
     <tbody>
-      @for (b of rows; track b.branchID || b.BranchID) {
+      @if (!rows.length) {
         <tr>
+          <td colspan="6" class="empty-row text-center py-4 text-muted">
+            <i class="bi bi-shop fs-3 d-block mb-1"></i> No branches found in system. Click 'Add Branch' to create one.
+          </td>
+        </tr>
+      }
+      @for (b of rows; track b.branchID || b.BranchID) {
+        <tr class="row-hover">
           <td>{{ b.companyName ?? b.CompanyName }}</td>
           <td><strong>{{ b.branchName ?? b.BranchName }}</strong></td>
-          <td>{{ b.branchCode ?? b.BranchCode }}</td>
+          <td><span class="code-badge">{{ b.branchCode ?? b.BranchCode }}</span></td>
           <td>{{ b.mobileNo }}</td>
           <td>{{ b.email }}</td>
           <td class="text-end">

@@ -14,9 +14,11 @@ export const APP_MENUS: AppMenuDef[] = [
   { key: 'company', label: 'Company Master', route: '/masters/company' },
   { key: 'branch', label: 'Branch Master', route: '/masters/branch' },
   { key: 'user', label: 'User Master', route: '/masters/user' },
+  { key: 'role', label: 'Role Master', route: '/masters/role' },
   { key: 'roleRights', label: 'Role Rights', route: '/masters/role-rights' },
   { key: 'bookingAdd', label: 'Add Booking', route: '/booking/add' },
   { key: 'bookingList', label: 'Booking List', route: '/booking/list' },
+  { key: 'availabilityCheck', label: 'Availability Check', route: '/booking/availability-check' },
   { key: 'reportDelivery', label: 'Today Delivery', route: '/reports/delivery' },
   { key: 'reportReturn', label: 'Today Return', route: '/reports/return' },
   { key: 'reportBooking', label: 'Booking Report', route: '/reports' },
@@ -24,7 +26,8 @@ export const APP_MENUS: AppMenuDef[] = [
 ];
 
 export const ROUTE_MENU_MAP: Record<string, string> = {
-  '/masters/add-product': 'product'
+  '/masters/add-product': 'product',
+  '/masters/bulk-product': 'product'
 };
 for (const m of APP_MENUS) {
   if (m.route) ROUTE_MENU_MAP[m.route] = m.key;

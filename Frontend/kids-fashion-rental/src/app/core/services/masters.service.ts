@@ -44,6 +44,16 @@ export class ProductApiService {
   uploadImage(file: File) { return this.api.uploadFile<any>('/upload/image', file); }
 }
 
+@Injectable({ providedIn: 'root' })
+export class RoleApiService {
+  constructor(private api: ApiService) {}
+  list() { return this.api.get<any>('/master/roles'); }
+  getById(id: number) { return this.api.get<any>(`/master/roles/${id}`); }
+  create(body: unknown) { return this.api.post<any>('/master/roles', body); }
+  update(body: unknown) { return this.api.put<any>('/master/roles', body); }
+  delete(id: number) { return this.api.delete<any>(`/master/roles/${id}`); }
+}
+
 /** Facade used by master-crud component */
 @Injectable({ providedIn: 'root' })
 export class MastersService {
@@ -51,15 +61,17 @@ export class MastersService {
     private category: CategoryApiService,
     private size: SizeApiService,
     private color: ColorApiService,
-    private product: ProductApiService
+    private product: ProductApiService,
+    private role: RoleApiService
   ) {}
 
   private svc(type: string) {
-    const map: Record<string, CategoryApiService | SizeApiService | ColorApiService | ProductApiService> = {
+    const map: Record<string, CategoryApiService | SizeApiService | ColorApiService | ProductApiService | RoleApiService> = {
       category: this.category,
       size: this.size,
       color: this.color,
-      product: this.product
+      product: this.product,
+      role: this.role
     };
     return map[type];
   }

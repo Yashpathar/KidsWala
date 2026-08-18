@@ -4,13 +4,11 @@
     <p class="breadcrumb">REPORTS / <strong>Delivery Report</strong></p>
   </div>
   <div class="actions no-print flex-gap align-center">
-    <div class="date-group">
-      <label>From:</label>
-      <input type="date" [(ngModel)]="fromDate" (change)="load()" />
+    <div class="date-group" style="min-width: 140px;">
+      <app-custom-datepicker label="From:" [(ngModel)]="fromDate" (dateChange)="load()"></app-custom-datepicker>
     </div>
-    <div class="date-group">
-      <label>To:</label>
-      <input type="date" [(ngModel)]="toDate" (change)="load()" />
+    <div class="date-group" style="min-width: 140px;">
+      <app-custom-datepicker label="To:" [(ngModel)]="toDate" (dateChange)="load()"></app-custom-datepicker>
     </div>
     <button type="button" class="btn-primary" (click)="load()" [disabled]="loading">Refresh</button>
     <button type="button" class="btn-outline" (click)="print()">Print</button>
@@ -28,25 +26,240 @@
         <th>Pending</th>
         <th>Payment</th>
         <th>Status</th>
+        <th class="text-end no-print">Action</th>
       </tr>
     </thead>
     <tbody>
       @if (loading) {
-        <tr><td colspan="7" class="empty-row">Loading...</td></tr>
+        <tr><td colspan="8" class="empty-row">Loading...</td></tr>
       } @else if (!rows.length) {
-        <tr><td colspan="7" class="empty-row">No deliveries for this date</td></tr>
+        <tr><td colspan="8" class="empty-row">No deliveries for this date</td></tr>
       }
       @for (r of rows; track r.bookingID) {
         <tr>
           <td><strong>{{ r.bookingNo }}</strong></td>
           <td>{{ r.customerName }}</td>
-          <td>{{ r.productName }}</td>
-          <td>{{ r.deliveryDate | date:'dd-MM-yyyy' }}</td>
+          <td class="product-cell" (click)="openProductDetails(r)">
+            <div class="product-codes-wrapper" title="Click to view booked product details">
+              @for (code of getProductCodesList(r.productCode).slice(0, 1); track $index) {
+                <span class="code-chip"><i class="bi bi-upc-scan"></i> {{ code }}</span>
+              }
+              @if (getProductCodesList(r.productCode).length > 1) {
+                <span class="code-chip-more"><i class="bi bi-chevron-down"></i> +{{ getProductCodesList(r.productCode).length - 1 }} More</span>
+              }
+              @if (!r.productCode) {
+                <span class="code-chip"><i class="bi bi-box-seam"></i> View Details</span>
+              }
+            </div>
+            @if (r.productName) {
+              <div class="product-sub-name">{{ formatProductNames(r.productName) }}</div>
+            }
+          </td>
+          <td>
+            {{ r.deliveryDate | date:'dd-MM-yyyy' }}
+            @if (r.deliverySession) {
+              <span class="session-badge" [class.day]="r.deliverySession === 'Day'" [class.night]="r.deliverySession === 'Night'">
+                {{ r.deliverySession === 'Day' ? '☀️ Day' : '🌙 Night' }}
+              </span>
+            }
+          </td>
           <td>{{ r.pendingAmount | currency:'INR' }}</td>
           <td>{{ r.paymentStatus }}</td>
           <td><span class="status-badge" [class]="statusClass(r.deliveryStatus)">{{ r.deliveryStatus }}</span></td>
+          <td class="text-end no-print">
+            @if (canDeliver(r)) {
+              <button type="button" class="btn-flow delivery" (click)="openDelivery(r); $event.stopPropagation()">
+                <i class="bi bi-truck"></i> Deliver
+              </button>
+            } @else {
+              <span class="status-done"><i class="bi bi-check-lg"></i> Delivered</span>
+            }
+          </td>
         </tr>
       }
     </tbody>
   </table>
 </div>
+
+<!-- Process Delivery Payment Modal Popup -->
+@if (deliveryOpen && activeRow) {
+  <div class="app-modal-backdrop" (click)="closeModal()">
+    <div class="app-modal-panel ui-card flow-modal" (click)="$event.stopPropagation()">
+      <h3><i class="bi bi-truck"></i> Process Delivery Payment</h3>
+      <p class="sub">{{ activeRow.bookingNo }} · {{ activeRow.customerName }}</p>
+
+      <!-- Booked Items Preview inside Delivery Modal -->
+      @if (activeBookingDetails?.items?.length) {
+        <div class="delivery-items-list">
+          @for (item of activeBookingDetails.items; track $index) {
+            <div class="delivery-item-card">
+              <div class="item-img-col">
+                @if (item.productImage || item.ProductImage) {
+                  <img [src]="productImageUrl(item.productImage || item.ProductImage)" alt="" />
+                } @else {
+                  <span class="img-ph"><i class="bi bi-image"></i></span>
+                }
+              </div>
+              <div class="item-info-col">
+                <div class="item-code-name">
+                  <strong class="code-badge">{{ item.productCode || item.ProductCode }}</strong>
+                  <span class="item-name">{{ item.productName || item.ProductName }}</span>
+                </div>
+                <div class="item-details-pills mt-1">
+                  @if (item.topSize || item.TopSize || item.bottomSize || item.BottomSize || item.topCode || item.TopCode || item.bottomCode || item.BottomCode) {
+                    <span class="blazer-badge">
+                      <i class="bi bi-tag-fill me-1"></i>Blazer: <b>{{ item.topSize || item.TopSize || item.size || item.Size || '-' }}</b>
+                      <small>({{ item.topCode || item.TopCode || item.productCode || item.ProductCode }})</small>
+                    </span>
+                    <span class="pant-badge">
+                      <i class="bi bi-tag-fill me-1"></i>Pant: <b>{{ item.bottomSize || item.BottomSize || item.size || item.Size || '-' }}</b>
+                      <small>({{ item.bottomCode || item.BottomCode || (item.productCode || item.ProductCode) + '-P' }})</small>
+                    </span>
+                  } @else {
+                    <span class="single-size-badge">Size: <b>{{ item.size || item.Size || '-' }}</b></span>
+                  }
+                  @if (item.color || item.Color) {
+                    <span class="color-badge"><i class="bi bi-palette me-1"></i>{{ item.color || item.Color }}</span>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      } @else if (!activeBookingDetails) {
+        <div class="delivery-items-loading text-center p-2 text-muted mb-2" style="font-size: 0.85rem;">
+          <i class="bi bi-arrow-repeat spin me-1"></i> Loading product details...
+        </div>
+      }
+
+      <div class="flow-breakdown">
+        <div class="fb-row"><span>Remaining Rent</span><strong>{{ deliveryRentPart | currency:'INR' }}</strong></div>
+        <div class="fb-row"><span>+ Deposit</span><strong>{{ deliveryDepositPart | currency:'INR' }}</strong></div>
+        <div class="fb-row total"><span>Collect at Delivery</span><strong>{{ deliveryAmount | currency:'INR' }}</strong></div>
+      </div>
+
+      <label>Amount (adjust +/−)</label>
+      <div class="amount-adj">
+        <button type="button" class="adj-btn" (click)="adjustDelivery(-100)">−</button>
+        <input type="number" [(ngModel)]="deliveryAmount" />
+        <button type="button" class="adj-btn" (click)="adjustDelivery(100)">+</button>
+      </div>
+
+      <label>Payment Mode</label>
+      <div class="mode-btns">
+        <button type="button" [class.active]="deliveryMode === 'Cash'" (click)="deliveryMode = 'Cash'"><i class="bi bi-cash"></i> Cash</button>
+        <button type="button" [class.active]="deliveryMode === 'Online'" (click)="deliveryMode = 'Online'"><i class="bi bi-phone"></i> Online</button>
+      </div>
+
+      @if (deliveryMode === 'Online') {
+        <label>Transaction No.</label>
+        <input [(ngModel)]="deliveryTxn" placeholder="UPI / bank ref no." />
+      }
+
+      <div class="modal-actions">
+        <button type="button" class="btn-outline" (click)="closeModal()">Cancel</button>
+        <button type="button" class="btn-primary" (click)="confirmDelivery()" [disabled]="flowSaving">
+          <i class="bi bi-check2-circle"></i>
+          {{ flowSaving ? 'Processing...' : 'Confirm Delivery' }}
+        </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Booked Product Details Modal Popup -->
+@if (productDetailsOpen && activeRow) {
+  <div class="app-modal-backdrop" (click)="closeModal()">
+    <div class="app-modal-panel ui-card product-details-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="bi bi-box-seam me-2"></i> Booked Product Details</h3>
+        <button type="button" class="btn-close-modal" (click)="closeModal()" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+      </div>
+
+      <div class="booking-meta-bar">
+        <div class="meta-item"><span>Booking No:</span> <strong>{{ activeRow.bookingNo }}</strong></div>
+        <div class="meta-item"><span>Customer:</span> <strong>{{ activeRow.customerName }}</strong></div>
+        <div class="meta-item">
+          <span>Delivery Date:</span> 
+          <strong>
+            {{ activeRow.deliveryDate | date:'dd-MM-yyyy' }}
+            @if (activeRow.deliverySession) {
+              ({{ activeRow.deliverySession }})
+            }
+          </strong>
+        </div>
+        <div class="meta-item"><span>Status:</span> <span class="status-badge" [class]="statusClass(activeRow.deliveryStatus)">{{ activeRow.deliveryStatus }}</span></div>
+      </div>
+
+      <div class="modal-body-content">
+        @if (productDetailsLoading) {
+          <div class="loading-box"><i class="bi bi-arrow-repeat spin"></i> Loading product details...</div>
+        } @else if (activeBookingDetails?.items?.length) {
+          <div class="table-responsive modal-items-wrap">
+            <table class="data-table modal-table">
+              <thead>
+                <tr>
+                  <th style="width:40px;">#</th>
+                  <th style="width:60px;">Image</th>
+                  <th>Product Code</th>
+                  <th>Product Name</th>
+                  <th>Size / Pair Details</th>
+                  <th>Color</th>
+                  <th class="money">Rent</th>
+                  <th class="money">Deposit</th>
+                  <th class="money">Final Rent</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of activeBookingDetails.items; track $index) {
+                  <tr>
+                    <td>{{ $index + 1 }}</td>
+                    <td class="img-cell">
+                      @if (item.productImage || item.ProductImage) {
+                        <img [src]="productImageUrl(item.productImage || item.ProductImage)" alt="" />
+                      } @else {
+                        <span class="img-ph"><i class="bi bi-image"></i></span>
+                      }
+                    </td>
+                    <td>
+                      <strong class="code-badge">{{ item.productCode || item.ProductCode }}</strong>
+                    </td>
+                    <td><strong>{{ item.productName || item.ProductName }}</strong></td>
+                    <td>
+                      @if (item.topSize || item.TopSize || item.bottomSize || item.BottomSize || item.topCode || item.TopCode || item.bottomCode || item.BottomCode) {
+                        <div class="pair-sizes-badge">
+                          <span class="blazer-badge">
+                            <i class="bi bi-tag-fill me-1"></i>Blazer: <b>{{ item.topSize || item.TopSize || item.size || item.Size || '-' }}</b>
+                            <small>({{ item.topCode || item.TopCode || item.productCode || item.ProductCode }})</small>
+                          </span>
+                          <span class="pant-badge">
+                            <i class="bi bi-tag-fill me-1"></i>Pant: <b>{{ item.bottomSize || item.BottomSize || item.size || item.Size || '-' }}</b>
+                            <small>({{ item.bottomCode || item.BottomCode || (item.productCode || item.ProductCode) + '-P' }})</small>
+                          </span>
+                        </div>
+                      } @else {
+                        <div class="pair-sizes-badge">
+                          <span class="single-size-badge">Size: <b>{{ item.size || item.Size || '-' }}</b></span>
+                        </div>
+                      }
+                    </td>
+                    <td>{{ item.color || item.Color || '-' }}</td>
+                    <td class="money">{{ (item.rentAmount || item.RentAmount || 0) | currency:'INR' }}</td>
+                    <td class="money">{{ (item.depositAmount || item.DepositAmount || 0) | currency:'INR' }}</td>
+                    <td class="money"><strong>{{ (item.finalRentAmount || item.FinalRentAmount || 0) | currency:'INR' }}</strong></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <p class="empty-modal-items">No product items found for this booking.</p>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-primary" (click)="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+}

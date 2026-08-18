@@ -35,14 +35,14 @@ export class DashboardComponent implements OnInit {
       datasets: [{
         data: [],
         label: 'Income',
-        borderColor: '#6366F1',
-        backgroundColor: 'rgba(99, 102, 241, 0.12)',
+        borderColor: '#dc9750',
+        backgroundColor: 'rgba(220, 151, 80, 0.12)',
         fill: true,
         tension: 0.4,
         borderWidth: 3,
         pointRadius: 6,
         pointBackgroundColor: '#fff',
-        pointBorderColor: '#6366F1',
+        pointBorderColor: '#dc9750',
         pointBorderWidth: 3
       }]
     },
@@ -67,24 +67,45 @@ export class DashboardComponent implements OnInit {
     }
   };
 
-  statusChart: ChartConfiguration<'doughnut'> = {
-    type: 'doughnut',
-    data: { labels: [], datasets: [{ data: [], backgroundColor: [], borderWidth: 0 }] },
+  statusChart: ChartConfiguration<'bar'> = {
+    type: 'bar',
+    data: {
+      labels: [],
+      datasets: [{
+        data: [],
+        backgroundColor: [],
+        borderWidth: 0,
+        borderRadius: 6,
+        barThickness: 18
+      }]
+    },
     options: {
+      indexAxis: 'y',
       responsive: true,
       maintainAspectRatio: false,
-      cutout: '68%',
       plugins: {
-        legend: {
-          position: 'right',
-          labels: { usePointStyle: true, padding: 14, font: { size: 12 } }
+        legend: { display: false }
+      },
+      scales: {
+        x: {
+          beginAtZero: true,
+          grid: { color: '#f8fafc' },
+          border: { display: false },
+          ticks: { precision: 0 }
+        },
+        y: {
+          grid: { display: false },
+          border: { display: false },
+          ticks: {
+            font: { weight: 'bold' }
+          }
         }
       }
     }
   };
 
   private readonly statusColors: Record<string, string> = {
-    Booked: '#6C3BFF',
+    Booked: '#dc9750',
     Delivered: '#22C55E',
     Returned: '#F59E0B',
     'Late Returned': '#F97316',

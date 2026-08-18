@@ -3,14 +3,18 @@
   @if (auth.canCreateMenu('company')) {
     <button type="button" class="btn-primary" (click)="openAdd()"><i class="bi bi-building-add"></i> Add Company</button>
   }
+</div>
+
 <div class="ui-card login-help">
   <h4><i class="bi bi-box-arrow-in-right"></i> Login model</h4>
   <p>Each user has one <strong>User ID</strong>. On login the system reads <strong>Role, Company, Branch</strong> from the user record — no extra selection step.</p>
   <p class="note">Super Admin: <code>superadmin</code> · Company Admin: <code>admin_kidswalla</code> · Branch Admin: <code>b1_nikol</code> · Staff: <code>staff_nikol1</code> (password <code>123</code>).</p>
 </div>
+
 @if (message) { <div class="alert-success">{{ message }}</div> }
 @if (error && !showModal) { <div class="alert-error">{{ error }}</div> }
-<div class="ui-card table-wrap">
+
+<div class="ui-card table-card table-wrap">
   <table class="data-table">
     <thead>
       <tr>
@@ -24,8 +28,15 @@
       </tr>
     </thead>
     <tbody>
-      @for (c of rows; track c.companyID) {
+      @if (!rows.length) {
         <tr>
+          <td colspan="7" class="empty-row text-center py-4 text-muted">
+            <i class="bi bi-building fs-3 d-block mb-1"></i> No companies found in system. Click 'Add Company' to create a new company.
+          </td>
+        </tr>
+      }
+      @for (c of rows; track c.companyID) {
+        <tr class="row-hover">
           <td>
             @if (c.logoImage || c.LogoImage) {
               <img [src]="imageUrl(c.logoImage || c.LogoImage)" alt="Logo" class="company-logo-thumb" />

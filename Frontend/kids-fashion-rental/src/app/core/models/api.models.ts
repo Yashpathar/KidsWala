@@ -56,7 +56,9 @@ export interface BookingItem {
 export interface AvailabilityResult {
   success: number;
   message: string;
+  bookingNo?: string;
   customerName?: string;
+  bookingDate?: string;
   deliveryDate?: string;
   returnDate?: string;
   nextAvailableDate?: string;
@@ -162,7 +164,9 @@ export function parseAvailability(data: unknown): AvailabilityResult | null {
   return {
     success: Number(r['success'] ?? r['Success'] ?? 0),
     message: String(r['message'] ?? r['Message'] ?? ''),
+    bookingNo: pickField<string>(r, 'bookingNo', 'BookingNo'),
     customerName: pickField<string>(r, 'customerName', 'CustomerName'),
+    bookingDate: pickField<string>(r, 'bookingDate', 'BookingDate'),
     deliveryDate: pickField<string>(r, 'deliveryDate', 'DeliveryDate'),
     returnDate: pickField<string>(r, 'returnDate', 'ReturnDate'),
     nextAvailableDate: pickField<string>(r, 'nextAvailableDate', 'NextAvailableDate')

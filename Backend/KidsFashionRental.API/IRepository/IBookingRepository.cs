@@ -12,6 +12,7 @@ public interface IBookingRepository
     Task<ApiResult> DeleteAsync(BookingByIdModel model);
     Task<ApiResult> ProcessReturnAsync(ReturnProcessModel model);
     Task<ApiResult> CheckAvailabilityAsync(AvailabilityRequestModel model);
+    Task<ApiResult> GetProductStatusByCodeAsync(string code, DateTime? deliveryDate = null, DateTime? returnDate = null);
     Task<ApiResult> GetNextBookingNoAsync();
     Task<ApiResult> AddPaymentAsync(PaymentCreateModel model);
 }

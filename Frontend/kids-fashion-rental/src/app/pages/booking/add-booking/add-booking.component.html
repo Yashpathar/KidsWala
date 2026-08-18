@@ -59,18 +59,38 @@
       <div class="ui-card section-card booking-details-card anim-card" style="--anim-order: 2">
         <h4><i class="bi bi-calendar3"></i> Booking Details</h4>
         <form [formGroup]="bookingForm">
-          <label>Booking Created By</label>
-          <input class="readonly-sm" [value]="auth.currentUser()?.fullName + ' (' + auth.currentUser()?.roleName + ')'" readonly />
-          <label>Booking Date</label>
-          <input type="date" formControlName="bookingDate" />
+          <div class="form-group-sm">
+            <label>Booking Created By</label>
+            <input class="readonly-sm" [value]="auth.currentUser()?.fullName + ' (' + auth.currentUser()?.roleName + ')'" readonly />
+          </div>
+
+          <div class="form-group-sm">
+            <app-custom-datepicker label="Booking Date" formControlName="bookingDate"></app-custom-datepicker>
+          </div>
+
           <div class="date-pair">
-            <div>
-              <label>Delivery Date</label>
-              <input type="date" formControlName="deliveryDate" />
+            <div class="date-box">
+              <app-custom-datepicker label="Delivery Date" formControlName="deliveryDate" [dropUp]="true"></app-custom-datepicker>
+              <div class="session-picker">
+                <button type="button" class="btn-session day" [class.active]="bookingForm.value.deliverySession === 'Day'" (click)="setDeliverySession('Day')">
+                  <span class="icon">☀️</span> Day
+                </button>
+                <button type="button" class="btn-session night" [class.active]="bookingForm.value.deliverySession === 'Night'" (click)="setDeliverySession('Night')">
+                  <span class="icon">🌙</span> Night
+                </button>
+              </div>
             </div>
-            <div>
-              <label>Return Date</label>
-              <input type="date" formControlName="returnDate" />
+
+            <div class="date-box">
+              <app-custom-datepicker label="Return Date" formControlName="returnDate" [dropUp]="true"></app-custom-datepicker>
+              <div class="session-picker">
+                <button type="button" class="btn-session day" [class.active]="bookingForm.value.returnSession === 'Day'" (click)="setReturnSession('Day')">
+                  <span class="icon">☀️</span> Day
+                </button>
+                <button type="button" class="btn-session night" [class.active]="bookingForm.value.returnSession === 'Night'" (click)="setReturnSession('Night')">
+                  <span class="icon">🌙</span> Night
+                </button>
+              </div>
             </div>
           </div>
           <div class="day-badges">
@@ -131,12 +151,23 @@
             <p class="no-suggest">No available products — or already added.</p>
           }
           @if (availability?.success === 1) {
-            <div class="alert-success anim-pop"><i class="bi bi-check-circle"></i> Available</div>
+            <div class="alert-success anim-pop"><i class="bi bi-check-circle-fill me-1"></i> Product Available for Selected Dates</div>
           }
           @if (availability?.success === 0) {
-            <div class="alert-danger anim-pop">
-              <i class="bi bi-x-circle"></i> Not available — {{ availability?.customerName }}<br />
-              {{ availability?.deliveryDate | date:'dd-MM-yyyy' }} – {{ availability?.returnDate | date:'dd-MM-yyyy' }}
+            <div class="alert-danger anim-pop flex-between align-center p-2 rounded-3">
+              <div>
+                <strong class="d-block text-danger"><i class="bi bi-x-circle-fill me-1"></i> Not Available — Booked!</strong>
+                @if (availability?.bookingNo) {
+                  <small class="d-block text-dark">Booking No: <b>{{ availability?.bookingNo }}</b></small>
+                }
+                <small class="d-block text-dark">Customer: <b>{{ availability?.customerName || 'N/A' }}</b></small>
+                <small class="d-block text-danger font-weight-bold">
+                  Dates: {{ availability?.deliveryDate | date:'dd-MM-yyyy' }} – {{ availability?.returnDate | date:'dd-MM-yyyy' }}
+                </small>
+              </div>
+              <button type="button" class="btn-sm btn-outline-danger ms-2 px-2 py-1" (click)="availabilityModalOpen = true" style="font-size: 0.78rem;">
+                View Details
+              </button>
             </div>
           }
         </div>
@@ -161,41 +192,31 @@
             </div>
             <div class="pair-booking-config">
               <label class="toggle-checkbox-sm">
-                <input type="checkbox" [(ngModel)]="selectedIsFullSet" (change)="onPairSizeChange()" [ngModelOptions]="{ standalone: true }" />
-                <span>Full Pair Set (Blazer & Pant)</span>
+                <input type="checkbox" [(ngModel)]="selectedIsFullSet" [ngModelOptions]="{ standalone: true }" />
+                <span>Full Pair Set (Top / Blazer & Bottom / Pant)</span>
               </label>
 
               @if (selectedIsFullSet) {
                 <div class="row-2 pair-sizes-row">
                   <div>
-                    <label>Blazer / Top Size * <small class="code-lbl">Code: <b>{{ computedTopCode }}</b></small></label>
-                    <input [(ngModel)]="selectedTopSize" (input)="onPairSizeChange()" [ngModelOptions]="{ standalone: true }" placeholder="e.g. 12" />
+                    <label>Top / Blazer Code *</label>
+                    <input [(ngModel)]="selectedTopCode" [ngModelOptions]="{ standalone: true }" placeholder="e.g. BL-15-1" />
+                    <small class="code-lbl">Size: <input [(ngModel)]="selectedTopSize" [ngModelOptions]="{ standalone: true }" placeholder="Size" style="width:60px; display:inline-block; padding:2px 4px;" /></small>
                   </div>
                   <div>
-                    <label>Pant / Bottom Size * <small class="code-lbl">Code: <b>{{ computedBottomCode }}</b></small></label>
-                    <input [(ngModel)]="selectedBottomSize" (input)="onPairSizeChange()" [ngModelOptions]="{ standalone: true }" placeholder="e.g. 13" />
+                    <label>Bottom / Pant Code *</label>
+                    <input [(ngModel)]="selectedBottomCode" [ngModelOptions]="{ standalone: true }" placeholder="e.g. BL-15P-1" />
+                    <small class="code-lbl">Size: <input [(ngModel)]="selectedBottomSize" [ngModelOptions]="{ standalone: true }" placeholder="Size" style="width:60px; display:inline-block; padding:2px 4px;" /></small>
                   </div>
                 </div>
 
-                @if (sizeValidationError) {
-                  <div class="alert-size-warning anim-shake">
-                    <i class="bi bi-exclamation-octagon-fill"></i> {{ sizeValidationError }}
-                  </div>
-                }
-
                 <div class="pair-availability-tags anim-fade-in">
                   <span class="tag-status ok">
-                    <i class="bi bi-check-circle-fill"></i> Blazer: <b>{{ computedTopCode }}</b> (Size {{ selectedTopSize || selectedProduct.size || '-' }}): Available
+                    <i class="bi bi-tag-fill"></i> Top Code: <b>{{ computedTopCode }}</b> (Size {{ selectedTopSize || selectedProduct.size || '-' }})
                   </span>
-                  @if (isPantInStock) {
-                    <span class="tag-status ok">
-                      <i class="bi bi-check-circle-fill"></i> Pant: <b>{{ computedBottomCode }}</b> (Size {{ selectedBottomSize || selectedProduct.size || '-' }}): Available
-                    </span>
-                  } @else {
-                    <span class="tag-status err">
-                      <i class="bi bi-x-circle-fill"></i> Pant: <b>{{ computedBottomCode }}</b> (Size {{ selectedBottomSize || '-' }}): Not Added in Stock
-                    </span>
-                  }
+                  <span class="tag-status ok">
+                    <i class="bi bi-tag-fill"></i> Bottom Code: <b>{{ computedBottomCode }}</b> (Size {{ selectedBottomSize || selectedProduct.size || '-' }})
+                  </span>
                 </div>
               }
             </div>
@@ -426,3 +447,47 @@
     <i class="bi bi-save"></i> {{ saving ? 'Saving...' : 'Save' }}
   </button>
 </div>
+
+<!-- Booked Product Details Modal Popup inside Add Booking page -->
+@if (availabilityModalOpen && selectedProduct && availability) {
+  <div class="app-modal-backdrop" (click)="availabilityModalOpen = false">
+    <div class="app-modal-panel ui-card product-details-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="bi bi-exclamation-triangle-fill me-2 text-warning"></i> Booked Product Details</h3>
+        <button type="button" class="btn-close-modal" (click)="availabilityModalOpen = false" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+      </div>
+
+      <div class="booking-meta-bar">
+        <div class="meta-item"><span>Product Code:</span> <strong>{{ selectedProduct.productCode }}</strong></div>
+        <div class="meta-item"><span>Product Name:</span> <strong>{{ selectedProduct.productName }}</strong></div>
+        <div class="meta-item"><span>Status:</span> <span class="status-badge late">Not Available</span></div>
+      </div>
+
+      <div class="modal-body-content p-3">
+        <div class="p-3 bg-light border rounded-3 mb-3">
+          <h5 class="text-danger mb-3"><i class="bi bi-x-circle-fill me-1"></i> Conflict Booking Information:</h5>
+          <div class="row g-3">
+            @if (availability.bookingNo) {
+              <div class="col-md-6"><span>Booking No:</span> <strong>{{ availability.bookingNo }}</strong></div>
+            }
+            <div class="col-md-6"><span>Customer:</span> <strong>{{ availability.customerName || 'N/A' }}</strong></div>
+            @if (availability.bookingDate) {
+              <div class="col-md-6"><span>Booking Date:</span> <strong>{{ availability.bookingDate | date:'dd-MM-yyyy' }}</strong></div>
+            }
+            <div class="col-md-6"><span>Delivery Date:</span> <strong class="text-primary">{{ availability.deliveryDate | date:'dd-MM-yyyy' }}</strong></div>
+            <div class="col-md-6"><span>Return Date:</span> <strong class="text-danger">{{ availability.returnDate | date:'dd-MM-yyyy' }}</strong></div>
+            @if (availability.nextAvailableDate) {
+              <div class="col-md-6"><span>Next Available Date:</span> <strong class="text-success">{{ availability.nextAvailableDate | date:'dd-MM-yyyy' }}</strong></div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-primary" (click)="availabilityModalOpen = false">Close</button>
+      </div>
+    </div>
+  </div>
+}
+
+

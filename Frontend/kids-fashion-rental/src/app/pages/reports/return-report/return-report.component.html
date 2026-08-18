@@ -5,13 +5,11 @@
       <p class="breadcrumb">REPORTS / <strong>Return Report</strong></p>
     </div>
     <div class="toolbar no-print">
-      <div class="date-field">
-        <span>From:</span>
-        <input type="date" [(ngModel)]="fromDate" (change)="load()" />
+      <div class="date-field" style="min-width: 140px;">
+        <app-custom-datepicker label="From:" [(ngModel)]="fromDate" (dateChange)="load()"></app-custom-datepicker>
       </div>
-      <div class="date-field">
-        <span>To:</span>
-        <input type="date" [(ngModel)]="toDate" (change)="load()" />
+      <div class="date-field" style="min-width: 140px;">
+        <app-custom-datepicker label="To:" [(ngModel)]="toDate" (dateChange)="load()"></app-custom-datepicker>
       </div>
       <button type="button" class="btn-primary" (click)="load()" [disabled]="loading">
         <i class="bi bi-arrow-clockwise" [class.spin]="loading"></i> Refresh
@@ -117,8 +115,30 @@
             <td>
               <span class="customer-name">{{ r.customerName }}</span>
             </td>
-            <td><span class="product-name">{{ r.productName }}</span></td>
-            <td>{{ r.returnDate | date:'dd-MM-yyyy' }}</td>
+            <td class="product-cell" (click)="openProductDetails(r)">
+              <div class="product-codes-wrapper" title="Click to view booked product details">
+                @for (code of getProductCodesList(r.productCode).slice(0, 1); track $index) {
+                  <span class="code-chip"><i class="bi bi-upc-scan"></i> {{ code }}</span>
+                }
+                @if (getProductCodesList(r.productCode).length > 1) {
+                  <span class="code-chip-more"><i class="bi bi-chevron-down"></i> +{{ getProductCodesList(r.productCode).length - 1 }} More</span>
+                }
+                @if (!r.productCode) {
+                  <span class="code-chip"><i class="bi bi-box-seam"></i> View Details</span>
+                }
+              </div>
+              @if (r.productName) {
+                <div class="product-sub-name">{{ formatProductNames(r.productName) }}</div>
+              }
+            </td>
+            <td>
+              {{ r.returnDate | date:'dd-MM-yyyy' }}
+              @if (r.returnSession) {
+                <span class="session-badge" [class.day]="r.returnSession === 'Day'" [class.night]="r.returnSession === 'Night'">
+                  {{ r.returnSession === 'Day' ? '☀️ Day' : '🌙 Night' }}
+                </span>
+              }
+            </td>
             <td class="money"><strong>{{ r.depositAmount | currency:'INR' }}</strong></td>
             <td><span class="status-badge" [class]="statusClass(r.bookingStatus)">{{ r.bookingStatus }}</span></td>
             <td class="num">{{ r.extraDays || 0 }}</td>
@@ -157,9 +177,21 @@
           <span class="status-badge" [class]="statusClass(r.bookingStatus)">{{ r.bookingStatus }}</span>
         </div>
         <p class="card-customer">{{ r.customerName }}</p>
-        <p class="card-product"><i class="bi bi-bag"></i> {{ r.productName }}</p>
+        <p class="card-product">
+          <button type="button" class="btn-product-code-chip" (click)="openProductDetails(r)">
+            <i class="bi bi-upc-scan"></i> {{ r.productCode || r.productName }}
+          </button>
+        </p>
         <div class="card-grid">
-          <div><span>Return</span><strong>{{ r.returnDate | date:'dd-MM-yyyy' }}</strong></div>
+          <div>
+            <span>Return</span>
+            <strong>
+              {{ r.returnDate | date:'dd-MM-yyyy' }}
+              <span class="session-badge" [class.day]="r.returnSession === 'Day'" [class.night]="r.returnSession === 'Night'">
+                {{ r.returnSession === 'Day' ? '☀️' : '🌙' }}
+              </span>
+            </strong>
+          </div>
           <div><span>Deposit</span><strong>{{ r.depositAmount | currency:'INR' }}</strong></div>
           <div><span>Refund</span><strong class="text-success">{{ r.finalRefundAmount | currency:'INR' }}</strong></div>
         </div>
@@ -186,11 +218,59 @@
         </button>
       </div>
 
-      <div class="product-chip">
-        <i class="bi bi-bag-check"></i>
-        <span>{{ activeRow.productName }}</span>
-        <em>Deposit {{ activeRow.depositAmount | currency:'INR' }}</em>
+      <div class="product-chip flex-between align-center">
+        <div>
+          <i class="bi bi-bag-check me-1"></i>
+          <strong>{{ getProductCodesList(activeRow.productCode).slice(0, 1).join(', ') || activeRow.productCode || activeRow.productName }}</strong>
+          <small class="d-block text-muted">{{ formatProductNames(activeRow.productName) }}</small>
+        </div>
+        <div>
+          <em>Deposit {{ activeRow.depositAmount | currency:'INR' }}</em>
+          <button type="button" class="btn-sm btn-link p-0 ms-2 text-primary" (click)="openProductDetails(activeRow)">
+            View Items
+          </button>
+        </div>
       </div>
+
+      <!-- Detailed booked items summary in return modal -->
+      @if (activeBookingDetails?.items?.length) {
+        <div class="delivery-items-list my-2">
+          @for (item of activeBookingDetails.items; track $index) {
+            <div class="delivery-item-card">
+              <div class="item-img-col">
+                @if (item.productImage || item.ProductImage) {
+                  <img [src]="productImageUrl(item.productImage || item.ProductImage)" alt="" />
+                } @else {
+                  <span class="img-ph"><i class="bi bi-image"></i></span>
+                }
+              </div>
+              <div class="item-info-col">
+                <div class="item-code-name">
+                  <strong class="code-badge">{{ item.productCode || item.ProductCode }}</strong>
+                  <span class="item-name">{{ item.productName || item.ProductName }}</span>
+                </div>
+                <div class="item-details-pills mt-1">
+                  @if (item.topSize || item.TopSize || item.bottomSize || item.BottomSize || item.topCode || item.TopCode || item.bottomCode || item.BottomCode) {
+                    <span class="blazer-badge">
+                      <i class="bi bi-tag-fill me-1"></i>Blazer: <b>{{ item.topSize || item.TopSize || item.size || item.Size || '-' }}</b>
+                      <small>({{ item.topCode || item.TopCode || item.productCode || item.ProductCode }})</small>
+                    </span>
+                    <span class="pant-badge">
+                      <i class="bi bi-tag-fill me-1"></i>Pant: <b>{{ item.bottomSize || item.BottomSize || item.size || item.Size || '-' }}</b>
+                      <small>({{ item.bottomCode || item.BottomCode || (item.productCode || item.ProductCode) + '-P' }})</small>
+                    </span>
+                  } @else {
+                    <span class="single-size-badge">Size: <b>{{ item.size || item.Size || '-' }}</b></span>
+                  }
+                  @if (item.color || item.Color) {
+                    <span class="color-badge"><i class="bi bi-palette me-1"></i>{{ item.color || item.Color }}</span>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
 
       <div class="return-hints">
         <span class="hint-pill"><i class="bi bi-calendar-event"></i> Scheduled {{ scheduledReturnDate | date:'dd-MM-yyyy' }}</span>
@@ -204,8 +284,7 @@
 
       <div class="modal-grid">
         <div class="modal-col">
-          <label>Actual Return Date</label>
-          <input type="date" class="field" [(ngModel)]="returnDate" (ngModelChange)="onReturnDateChange()" />
+          <app-custom-datepicker label="Actual Return Date" [(ngModel)]="returnDate" (dateChange)="onReturnDateChange()"></app-custom-datepicker>
 
           <label>Problem notes</label>
           <textarea class="field" [(ngModel)]="returnNotes" rows="3" placeholder="Stain, tear, missing button…"></textarea>
@@ -259,6 +338,103 @@
           <i class="bi bi-check2-circle"></i>
           {{ flowSaving ? 'Processing...' : 'Confirm Return & Refund' }}
         </button>
+      </div>
+    </div>
+  </div>
+}
+
+<!-- Booked Product Details Modal Popup -->
+@if (productDetailsOpen && activeRow) {
+  <div class="app-modal-backdrop" (click)="closeReturn()">
+    <div class="app-modal-panel ui-card product-details-modal" (click)="$event.stopPropagation()">
+      <div class="modal-header">
+        <h3><i class="bi bi-box-seam me-2"></i> Booked Product Details</h3>
+        <button type="button" class="btn-close-modal" (click)="closeReturn()" aria-label="Close"><i class="bi bi-x-lg"></i></button>
+      </div>
+
+      <div class="booking-meta-bar">
+        <div class="meta-item"><span>Booking No:</span> <strong>{{ activeRow.bookingNo }}</strong></div>
+        <div class="meta-item"><span>Customer:</span> <strong>{{ activeRow.customerName }}</strong></div>
+        <div class="meta-item">
+          <span>Return Date:</span> 
+          <strong>
+            {{ activeRow.returnDate | date:'dd-MM-yyyy' }}
+            @if (activeRow.returnSession) {
+              ({{ activeRow.returnSession }})
+            }
+          </strong>
+        </div>
+        <div class="meta-item"><span>Status:</span> <span class="status-badge" [class]="statusClass(activeRow.bookingStatus)">{{ activeRow.bookingStatus }}</span></div>
+      </div>
+
+      <div class="modal-body-content">
+        @if (productDetailsLoading) {
+          <div class="loading-box"><i class="bi bi-arrow-repeat spin"></i> Loading product details...</div>
+        } @else if (activeBookingDetails?.items?.length) {
+          <div class="table-responsive modal-items-wrap">
+            <table class="data-table modal-table">
+              <thead>
+                <tr>
+                  <th style="width:40px;">#</th>
+                  <th style="width:60px;">Image</th>
+                  <th>Product Code</th>
+                  <th>Product Name</th>
+                  <th>Size / Pair Details</th>
+                  <th>Color</th>
+                  <th class="money">Rent</th>
+                  <th class="money">Deposit</th>
+                  <th class="money">Final Rent</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of activeBookingDetails.items; track $index) {
+                  <tr>
+                    <td>{{ $index + 1 }}</td>
+                    <td class="img-cell">
+                      @if (item.productImage || item.ProductImage) {
+                        <img [src]="productImageUrl(item.productImage || item.ProductImage)" alt="" />
+                      } @else {
+                        <span class="img-ph"><i class="bi bi-image"></i></span>
+                      }
+                    </td>
+                    <td>
+                      <strong class="code-badge">{{ item.productCode || item.ProductCode }}</strong>
+                    </td>
+                    <td><strong>{{ item.productName || item.ProductName }}</strong></td>
+                    <td>
+                      @if (item.topSize || item.TopSize || item.bottomSize || item.BottomSize || item.topCode || item.TopCode || item.bottomCode || item.BottomCode) {
+                        <div class="pair-sizes-badge">
+                          <span class="blazer-badge">
+                            <i class="bi bi-tag-fill me-1"></i>Blazer: <b>{{ item.topSize || item.TopSize || item.size || item.Size || '-' }}</b>
+                            <small>({{ item.topCode || item.TopCode || item.productCode || item.ProductCode }})</small>
+                          </span>
+                          <span class="pant-badge">
+                            <i class="bi bi-tag-fill me-1"></i>Pant: <b>{{ item.bottomSize || item.BottomSize || item.size || item.Size || '-' }}</b>
+                            <small>({{ item.bottomCode || item.BottomCode || (item.productCode || item.ProductCode) + '-P' }})</small>
+                          </span>
+                        </div>
+                      } @else {
+                        <div class="pair-sizes-badge">
+                          <span class="single-size-badge">Size: <b>{{ item.size || item.Size || '-' }}</b></span>
+                        </div>
+                      }
+                    </td>
+                    <td>{{ item.color || item.Color || '-' }}</td>
+                    <td class="money">{{ (item.rentAmount || item.RentAmount || 0) | currency:'INR' }}</td>
+                    <td class="money">{{ (item.depositAmount || item.DepositAmount || 0) | currency:'INR' }}</td>
+                    <td class="money"><strong>{{ (item.finalRentAmount || item.FinalRentAmount || 0) | currency:'INR' }}</strong></td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        } @else {
+          <p class="empty-modal-items">No product items found for this booking.</p>
+        }
+      </div>
+
+      <div class="modal-footer">
+        <button type="button" class="btn-primary" (click)="closeReturn()">Close</button>
       </div>
     </div>
   </div>

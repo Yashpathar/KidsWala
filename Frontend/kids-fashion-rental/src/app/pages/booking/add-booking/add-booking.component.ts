@@ -20,11 +20,12 @@ import {
   pickId
 } from '../../../core/models/api.models';
 import { environment } from '../../../../environments/environment';
+import { CustomDatePickerComponent } from '../../../shared/components/custom-date-picker/custom-date-picker.component';
 
 @Component({
   selector: 'app-add-booking',
   standalone: true,
-  imports: [ReactiveFormsModule, FormsModule, CurrencyPipe, DatePipe, RouterLink],
+  imports: [ReactiveFormsModule, FormsModule, CurrencyPipe, DatePipe, RouterLink, CustomDatePickerComponent],
   templateUrl: './add-booking.component.html',
   styleUrl: './add-booking.component.scss',
   host: { class: 'add-booking-host' }
@@ -48,6 +49,7 @@ export class AddBookingComponent implements OnInit, OnDestroy {
   productSuggestions: Product[] = [];
   selectedProduct: (Product & { productImage?: string; availableQuantity?: number }) | null = null;
   availability: AvailabilityResult | null = null;
+  availabilityModalOpen = false;
   items: BookingItem[] = [];
   saving = false;
   message = '';
@@ -90,7 +92,9 @@ export class AddBookingComponent implements OnInit, OnDestroy {
   bookingForm = this.fb.group({
     bookingDate: [this.today(), Validators.required],
     deliveryDate: [this.today(), Validators.required],
+    deliverySession: ['Day', Validators.required],
     returnDate: [this.addDays(4), Validators.required],
+    returnSession: ['Day', Validators.required],
     bookingStatus: ['Booked'],
     paymentStatus: ['Partial'],
     notes: ['']
@@ -187,10 +191,13 @@ export class AddBookingComponent implements OnInit, OnDestroy {
     this.discountPercent = Number(p.discountPercent) || 0;
     this.extraChargePerDay = Number(p.extraChargePerDay) || 150;
 
-    this.selectedIsFullSet = !!(p.isFullSet ?? (p as any).IsFullSet);
+    this.selectedIsFullSet = true;
     this.selectedTopCode = p.topCode || p.productCode || '';
     this.selectedTopSize = p.topSize || p.size || '';
-    this.selectedBottomCode = p.bottomCode || (p.productCode ? `${p.productCode}-PNT` : '');
+    const bCodeDefault = p.productCode
+      ? (p.productCode.includes('-') ? p.productCode.replace(/-([^-]+)$/, 'P-$1') : `${p.productCode}P`)
+      : '';
+    this.selectedBottomCode = p.bottomCode || bCodeDefault;
     this.selectedBottomSize = p.bottomSize || p.size || '';
 
     this.onPairSizeChange();
@@ -199,44 +206,22 @@ export class AddBookingComponent implements OnInit, OnDestroy {
 
   get computedTopCode(): string {
     if (!this.selectedProduct) return '';
-    if (this.selectedTopCode && this.selectedTopCode !== this.selectedProduct.productCode) {
-      return this.selectedTopCode;
-    }
-    const base = this.selectedProduct.productCode;
-    const sz = (this.selectedTopSize || this.selectedProduct.size || '12').trim();
-    return `${base}-${sz}`;
+    return this.selectedTopCode || this.selectedProduct.productCode || '';
   }
 
   get computedBottomCode(): string {
     if (!this.selectedProduct) return '';
-    if (this.selectedBottomCode && !this.selectedBottomCode.endsWith('-PNT')) {
-      return this.selectedBottomCode;
-    }
+    if (this.selectedBottomCode) return this.selectedBottomCode;
     const base = this.selectedProduct.productCode;
-    const sz = (this.selectedBottomSize || this.selectedProduct.size || '12').trim();
-    return `${base}P-${sz}`;
+    return base ? (base.includes('-') ? base.replace(/-([^-]+)$/, 'P-$1') : `${base}P`) : '';
   }
 
   get isPantInStock(): boolean {
-    if (!this.selectedProduct || !this.selectedIsFullSet) return true;
-    const btmSz = (this.selectedBottomSize || '').trim();
-    if (!btmSz) return true;
-
-    const prodBtmSz = (this.selectedProduct.bottomSize || this.selectedProduct.size || '').trim();
-    if (prodBtmSz && prodBtmSz.toLowerCase() === btmSz.toLowerCase()) return true;
-
-    return this.allProducts.some(ap =>
-      (ap.productCode === this.selectedProduct?.productCode || ap.productName === this.selectedProduct?.productName) &&
-      (ap.size?.toLowerCase() === btmSz.toLowerCase() || ap.bottomSize?.toLowerCase() === btmSz.toLowerCase())
-    );
+    return true;
   }
 
   onPairSizeChange() {
     this.sizeValidationError = '';
-    if (this.selectedIsFullSet && !this.isPantInStock) {
-      const btmSz = (this.selectedBottomSize || '').trim();
-      this.sizeValidationError = `⚠️ Warning: Pant Size "${btmSz}" (${this.computedBottomCode}) is NOT added in product stock for this item!`;
-    }
   }
 
   private mapProduct(row: unknown): Product & { productImage?: string; availableQuantity?: number } {
@@ -275,6 +260,14 @@ export class AddBookingComponent implements OnInit, OnDestroy {
     const r = this.bookingForm.value.returnDate;
     if (!d || !r) return 0;
     return Math.max(1, Math.ceil((new Date(r).getTime() - new Date(d).getTime()) / 86400000) + 1);
+  }
+
+  setDeliverySession(session: 'Day' | 'Night') {
+    this.bookingForm.patchValue({ deliverySession: session });
+  }
+
+  setReturnSession(session: 'Day' | 'Night') {
+    this.bookingForm.patchValue({ returnSession: session });
   }
 
   /** Standard rental days from added products (default 4) */
@@ -450,10 +443,6 @@ export class AddBookingComponent implements OnInit, OnDestroy {
 
   addItem() {
     if (!this.selectedProduct || this.availability?.success === 0) return;
-    if (this.selectedIsFullSet && this.sizeValidationError.startsWith('⚠️ Validation Error:')) {
-      this.showMsg(this.sizeValidationError, 'error');
-      return;
-    }
     const p = this.selectedProduct;
     const productId = pickId(p, 'productID', 'ProductID');
     if (!productId) {
@@ -467,11 +456,6 @@ export class AddBookingComponent implements OnInit, OnDestroy {
     const finalRent =
       (p.rentAmount - (p.rentAmount * this.discountPercent) / 100) * this.itemQty;
     const deposit = p.depositAmount * this.itemQty;
-
-    if (this.selectedIsFullSet && !this.isPantInStock) {
-      this.showMsg(`Pant Code ${this.computedBottomCode} (Size ${this.selectedBottomSize}) is not added in product stock!`, 'error');
-      return;
-    }
 
     const displaySize = this.selectedIsFullSet
       ? `Blazer: ${this.selectedTopSize || p.size || '-'} (${this.computedTopCode}) | Pant: ${this.selectedBottomSize || p.size || '-'} (${this.computedBottomCode})`
@@ -547,6 +531,8 @@ export class AddBookingComponent implements OnInit, OnDestroy {
       endDate: b.returnDate,
       deliveryDate: b.deliveryDate,
       returnDate: b.returnDate,
+      deliverySession: b.deliverySession || 'Day',
+      returnSession: b.returnSession || 'Day',
       rentDays: this.rentDays,
       totalRentAmount: c.rentWithExtra,
       discountAmount: c.discountAmt,

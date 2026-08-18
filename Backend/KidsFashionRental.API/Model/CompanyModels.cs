@@ -5,6 +5,8 @@ public class RoleModel
     public int RoleID { get; set; }
     public string RoleName { get; set; } = string.Empty;
     public string? Description { get; set; }
+    public string DataScope { get; set; } = "CompanyAll";
+    public bool IsActive { get; set; } = true;
 }
 
 public class BranchModel
@@ -63,6 +65,16 @@ public class RoleInsertModel
 {
     public string RoleName { get; set; } = string.Empty;
     public string? Description { get; set; }
+    public string? DataScope { get; set; } = "CompanyAll";
+}
+
+public class RoleUpdateModel
+{
+    public int RoleID { get; set; }
+    public string RoleName { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string? DataScope { get; set; } = "CompanyAll";
+    public bool IsActive { get; set; } = true;
 }
 
 public class RoleRightsSaveModel

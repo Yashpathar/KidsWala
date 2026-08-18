@@ -7,6 +7,8 @@ import { AuthService } from '../../../core/services/auth.service';
 import { BookingReturnService } from '../../../core/services/booking-return.service';
 import { AlertService } from '../../../core/services/alert.service';
 import { computeReturnRefund } from '../../../core/utils/booking-return.util';
+import { environment } from '../../../../environments/environment';
+import { CustomDatePickerComponent } from '../../../shared/components/custom-date-picker/custom-date-picker.component';
 import {
   asArray,
   extractErrorMessage,
@@ -19,6 +21,8 @@ export interface BookingRow {
   bookingID: number;
   bookingNo: string;
   customerName: string;
+  productCode?: string;
+  productName?: string;
   bookingDate: string;
   deliveryDate: string;
   returnDate: string;
@@ -31,12 +35,14 @@ export interface BookingRow {
   bookingStatus: string;
   paymentStatus: string;
   finalRefundAmount?: number;
+  deliverySession?: string;
+  returnSession?: string;
 }
 
 @Component({
   selector: 'app-booking-list',
   standalone: true,
-  imports: [CurrencyPipe, DatePipe, RouterLink, FormsModule],
+  imports: [CurrencyPipe, DatePipe, RouterLink, FormsModule, CustomDatePickerComponent],
   templateUrl: './booking-list.component.html',
   styleUrl: './booking-list.component.scss'
 })
@@ -57,7 +63,10 @@ export class BookingListComponent implements OnInit {
 
   deliveryOpen = false;
   returnOpen = false;
+  productDetailsOpen = false;
   activeBooking: BookingRow | null = null;
+  activeBookingDetails: any = null;
+  productDetailsLoading = false;
   flowSaving = false;
 
   deliveryAmount = 0;
@@ -134,6 +143,8 @@ export class BookingListComponent implements OnInit {
       bookingID: pickId(r, 'bookingID', 'BookingID'),
       bookingNo: String(pickField<string>(r, 'bookingNo', 'BookingNo') ?? ''),
       customerName: String(pickField<string>(r, 'customerName', 'CustomerName') ?? ''),
+      productCode: String(pickField<string>(r, 'productCode', 'ProductCode') ?? ''),
+      productName: String(pickField<string>(r, 'productName', 'ProductName') ?? ''),
       bookingDate: String(pickField(r, 'bookingDate', 'BookingDate') ?? ''),
       deliveryDate: String(pickField(r, 'deliveryDate', 'DeliveryDate') ?? ''),
       returnDate: String(pickField(r, 'returnDate', 'ReturnDate') ?? ''),
@@ -145,8 +156,29 @@ export class BookingListComponent implements OnInit {
       totalAmount: Number(pickField(r, 'totalAmount', 'TotalAmount') ?? 0),
       bookingStatus: String(pickField<string>(r, 'bookingStatus', 'BookingStatus') ?? ''),
       paymentStatus: String(pickField<string>(r, 'paymentStatus', 'PaymentStatus') ?? ''),
-      finalRefundAmount: Number(pickField(r, 'finalRefundAmount', 'FinalRefundAmount') ?? 0) || undefined
+      finalRefundAmount: Number(pickField(r, 'finalRefundAmount', 'FinalRefundAmount') ?? 0) || undefined,
+      deliverySession: String(pickField<string>(r, 'deliverySession', 'DeliverySession') ?? ''),
+      returnSession: String(pickField<string>(r, 'returnSession', 'ReturnSession') ?? '')
     };
+  }
+
+  openProductDetails(b: BookingRow) {
+    this.activeBooking = b;
+    this.productDetailsOpen = true;
+    this.productDetailsLoading = true;
+    this.activeBookingDetails = null;
+
+    this.api.get<any>(`/booking/${b.bookingID}`).subscribe({
+      next: r => {
+        this.productDetailsLoading = false;
+        if (r.success && r.data) {
+          this.activeBookingDetails = r.data;
+        }
+      },
+      error: () => {
+        this.productDetailsLoading = false;
+      }
+    });
   }
 
   openDelivery(b: BookingRow) {
@@ -158,6 +190,15 @@ export class BookingListComponent implements OnInit {
     this.deliveryMode = 'Cash';
     this.deliveryTxn = '';
     this.deliveryOpen = true;
+    this.activeBookingDetails = null;
+
+    this.api.get<any>(`/booking/${b.bookingID}`).subscribe({
+      next: r => {
+        if (r.success && r.data) {
+          this.activeBookingDetails = r.data;
+        }
+      }
+    });
   }
 
   openReturn(b: BookingRow) {
@@ -402,5 +443,24 @@ export class BookingListComponent implements OnInit {
       Completed: 'completed',
       Cancelled: 'cancelled'
     }[s] || 'booked';
+  }
+
+  formatProductNames(nameStr?: string): string {
+    if (!nameStr) return '—';
+    const names = nameStr.split(',').map(s => s.trim()).filter(Boolean);
+    const unique = Array.from(new Set(names));
+    return unique.join(', ');
+  }
+
+  getProductCodesList(codeStr?: string): string[] {
+    if (!codeStr) return [];
+    return codeStr.split(',').map(s => s.trim()).filter(Boolean);
+  }
+
+  productImageUrl(path?: string): string {
+    if (!path) return '';
+    if (path.startsWith('http')) return path;
+    const base = environment.apiUrl.replace(/\/api\/?$/, '');
+    return `${base}${path.startsWith('/') ? path : '/' + path}`;
   }
 }
